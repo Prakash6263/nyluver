@@ -26,6 +26,8 @@ jobs:
         run: npm run server:build
 
       - name: Build Web Frontend
+        env:
+          EXPO_PUBLIC_DOMAIN: node.aitechnotech.in
         run: |
           npx expo export --platform web
           tar -czf frontend.tar.gz -C dist .
