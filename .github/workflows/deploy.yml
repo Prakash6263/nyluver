@@ -25,13 +25,6 @@ jobs:
       - name: Build Server
         run: npm run server:build
 
-      - name: Build Web Frontend
-        env:
-          EXPO_PUBLIC_DOMAIN: node.aitechnotech.in
-        run: |
-          npx expo export --platform web
-          tar -czf frontend.tar.gz -C dist .
-
       - name: Deploy Build to Server (SCP)
         uses: appleboy/scp-action@master
         with:
@@ -39,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: 22
-          source: "server_dist/,package.json,package-lock.json,server/admin/index.html,server/templates/,frontend.tar.gz"
+          source: "server_dist/,package.json,package-lock.json,server/admin/index.html,server/templates/"
           target: "~/nyluver-backend"
           strip_components: 0
 
@@ -53,11 +46,6 @@ jobs:
           script: |
             cd ~/nyluver-backend
             npm install --omit=dev
-
-            # Extract frontend assets
-            mkdir -p nyluver
-            tar -xzf frontend.tar.gz -C nyluver
-            rm -f frontend.tar.gz
 
             # Write .env file on server with all required variables
             cat > .env << 'ENVEOF'
