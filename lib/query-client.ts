@@ -15,6 +15,14 @@ export function getApiUrl(): string {
   const protocol = (host.includes("localhost") || host.includes("127.0.0.1")) ? "http" : "https";
   let url = new URL(`${protocol}://${host}`);
 
+  if (protocol === "https") {
+    url.pathname = "/nyluver/";
+  } else {
+    if (!url.pathname.endsWith("/")) {
+      url.pathname += "/";
+    }
+  }
+
   return url.href;
 }
 
@@ -31,7 +39,8 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
+  const cleanRoute = route.replace(/^\/+/, '');
+  const url = new URL(cleanRoute, baseUrl);
 
   const res = await fetch(url.toString(), {
     method,
@@ -51,7 +60,9 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const baseUrl = getApiUrl();
-    const url = new URL(queryKey.join("/") as string, baseUrl);
+    const joined = queryKey.join("/");
+    const cleanRoute = joined.replace(/^\/+/, '');
+    const url = new URL(cleanRoute, baseUrl);
 
     const res = await fetch(url.toString(), {
       credentials: "include",

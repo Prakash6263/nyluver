@@ -103,7 +103,7 @@ tr:hover td { background:#FAFAF8; }
 <body>
 <div id="app"></div>
 <script>
-const API = '';
+const API = window.location.pathname.startsWith('/nyluver/') ? '/nyluver' : '';
 let currentUser = null;
 let currentPage = 'dashboard';
 let pageData = {};
