@@ -1,0 +1,533 @@
+Design and build Nyluver, a luxury-minimal bilingual (Arabic/English) gifting & florist mobile app for iOS/Android with an Admin Panel. The UI layout and navigation patterns must match Floward’s app closely (category layout, product listing, PDP structure, cart/checkout flow, order tracking pages), but use Nyluver’s own colors/typography. Build for one-city launch with a clean path to multi-city expansion.
+
+0) Core operating model
+
+Owned fulfillment only: Nyluver operates central warehouses (no vendor marketplace at launch).
+
+Own delivery fleet: drivers are internal. Delivery dispatch is manual via admin panel.
+
+WhatsApp-first delivery coordination: recipient contact and address collection occurs via WhatsApp (inside operational workflow).
+
+Anonymous gifting only: recipient never sees sender identity. Only platform/admin can see sender.
+
+1) Platforms, architecture, stack choice
+
+Pick the most suitable stack for fast iteration + strong UI parity + maintainability:
+
+Mobile: Flutter (preferred) or React Native. Choose one and justify internally by speed, UI parity, bilingual RTL support, performance.
+
+Backend: Node.js (NestJS) or Laravel.
+
+DB: PostgreSQL.
+
+Cache/queue: Redis + background jobs.
+
+Storage: S3-compatible object storage for product images and delivery evidence.
+
+Notifications: SMS gateway + push notifications.
+
+Payments: bank card gateway + PayPal.
+
+Analytics: event tracking (funnel, slot fill rate, delivery SLA).
+
+2) Roles and access
+
+Only these roles exist at launch:
+
+Customer (Sender)
+
+Admin (Operations + Catalog + Pricing + Dispatch + Support)
+
+No separate driver app at launch. Drivers receive tasks via internal ops method (admin-driven), but the system must model drivers for future expansion.
+
+3) Key differentiators and constraints
+
+Differentiators: price, luxury, speed, personalization.
+
+Exact-match photos: what the customer sees must be what gets delivered. No substitutions allowed.
+
+No refunds policy. Implement replacement/escalation rules without refunding (define outcomes: remake, redelivery, store credit optional only if admin enables later).
+
+Limited delivery slots: strict capacity control.
+
+4) Localization and language
+
+Bilingual equal: Arabic + English across the entire app and admin panel.
+
+Full RTL support for Arabic.
+
+All content fields (product name/description, categories, moods/occasions, banners) must support EN+AR.
+
+5) Geography, cities, currency, VAT
+
+Launch: one city, expand to multiple cities later.
+
+Currency logic:
+
+If paying by local bank card → charge in LYD.
+
+If paying by PayPal → charge in USD.
+
+Pricing/VAT must be configurable from Admin Panel:
+
+VAT enable/disable per city/country
+
+VAT % value
+
+Price display inclusive/exclusive flag
+
+FX rate handling (manual admin-set rate; no external dependency required at launch)
+
+6) Catalog structure and merchandising
+
+Catalog includes:
+
+Flowers and Gifts (gifts start small-scale)
+
+Collections:
+
+By Occasion (Birthday, Anniversary, Congratulations, Apology, etc.)
+
+By Mood (Luxury, Romantic, Minimal, Warm, Elegant, etc.)
+
+Add-ons: all (card message, balloons, chocolates, teddy, premium wrapping tiers, ribbons, etc.)
+
+Product media: multiple images, one primary. Enforce “exact match” tagging.
+
+Inventory approach (must support both until decision is finalized):
+
+Mode A: Stock-based per SKU (central warehouse inventory counts)
+
+Mode B: Daily quota per SKU/collection
+Admin can select mode globally and per city.
+
+7) Checkout rules (modified Floward-like journey)
+
+Collect:
+
+Recipient name
+
+Recipient WhatsApp-linked phone number (required)
+
+Address optional (can be provided by sender or collected later from recipient)
+
+Delivery slot selection (see slots below)
+
+Card message (typed only at launch)
+Anonymous gifting:
+
+UI must never reveal sender identity to recipient.
+
+Receipt, order tracking, and admin view show sender identity only internally.
+
+Payment:
+
+Only bank card or PayPal
+
+Pay at checkout always
+
+Fraud controls required.
+
+8) Delivery slots and capacity engine
+
+Each day has 3 slots:
+
+10:00–13:00
+
+13:00–18:00
+
+18:00–21:00
+
+Capacity rules:
+
+Default: 50 orders per slot per day (admin editable).
+
+Once slot capacity is reached, slot becomes unavailable in app.
+
+Slot capacity is per city (and optionally per warehouse if multi-warehouse later).
+
+Express delivery:
+
+Standard SLA: 3–4 hours
+
+Express option: extra fee, priority handling
+
+Express availability can be disabled when near capacity.
+
+9) Recipient coordination mechanism (WhatsApp-first)
+
+After payment, order status becomes “Awaiting Recipient Confirmation”.
+Operations must:
+
+Contact recipient on WhatsApp to:
+
+confirm acceptance of gift
+
+collect delivery address (if missing)
+
+validate delivery time window (slot)
+Rules:
+
+If recipient declines → order becomes “Declined by Recipient” with admin outcome rules (hold, reschedule, convert to store credit if enabled later; no refund).
+
+If recipient doesn’t respond → escalation states and timers:
+
+T+15m reminder
+
+T+60m escalation to admin call
+
+Slot cutoff handling
+
+Implement WhatsApp action helpers:
+
+Tap-to-open WhatsApp with prefilled templates (AR/EN)
+
+Conversation log field in admin (manual notes + timestamps)
+
+Store consent/acceptance outcome
+
+10) Order lifecycle and statuses
+
+Must implement:
+
+Pending Payment
+
+Paid
+
+Awaiting Recipient Confirmation
+
+Accepted (recipient confirmed)
+
+In Prep
+
+Ready
+
+Out for Delivery
+
+Delivered
+
+Failed Delivery
+
+Declined by Recipient
+
+Cancelled (allowed only before prep)
+
+Rescheduled (admin only)
+
+Cancellation policy:
+
+Allowed before prep only.
+
+After “In Prep” begins: no cancellation.
+
+Substitution:
+
+Never allowed. If out-of-stock or quality issue occurs, admin must resolve by remake or reschedule without substitution.
+
+11) Loyalty and subscriptions
+
+Points system:
+
+Earn points per order (configurable formula by admin: % of spend or fixed per order)
+
+Points ledger: earn, redeem, adjustments
+
+Points redemption: promo code or direct discount (admin-configurable)
+
+Subscriptions:
+
+Weekly/monthly bouquet plan (basic v1)
+
+Subscription rules:
+
+Choose plan
+
+Choose delivery slot preference
+
+Auto-renew toggle (depending on payment capability)
+
+Skip/pause feature optional for v1, but model for later
+
+12) Promotions
+
+Promo codes supported (percentage, fixed, free express, category-limited)
+
+First-order promo optional
+
+Stack rules configurable (default: no stacking)
+
+13) Fraud and abuse controls (required)
+
+Device fingerprint + velocity checks
+
+Phone verification via SMS OTP at signup/login
+
+Limits:
+
+max orders per phone/day
+
+repeated failed payments lockout
+
+Manual review flagging in admin:
+
+suspicious orders queue
+
+blacklist phone numbers
+
+14) Customer app screens (Floward-identical layout patterns)
+
+Build screens with Floward-like structure:
+
+Splash + language selection
+
+Onboarding
+
+Login (phone OTP) + optional email profile
+
+Home (banners, occasions, moods, featured)
+
+Categories (Flowers, Gifts, Add-ons)
+
+Search + filters (occasion, mood, price, express eligible, slot availability)
+
+Product listing grid/list
+
+Product detail page:
+
+gallery
+
+price
+
+delivery slot selector preview
+
+add-ons carousel
+
+“Exact match guarantee” badge
+
+Cart
+
+Checkout:
+
+recipient details (WhatsApp number)
+
+address optional
+
+slot selection (capacity-aware)
+
+message card
+
+payment method (card/PayPal)
+
+Order confirmation
+
+Order tracking (status timeline + slot + support)
+
+Orders history
+
+Profile (language, city, saved recipients, points, subscriptions)
+
+Support (WhatsApp-first + FAQ)
+
+15) Admin panel modules (must be complete for operations)
+
+Admin modules:
+
+Dashboard:
+
+Orders by status
+
+Slot fill rate today
+
+Express share
+
+SLA time metrics
+
+Catalog:
+
+Products (EN/AR), categories, moods, occasions
+
+Add-ons management
+
+Bundles
+
+Photo management + “exact match” enforcement
+
+Inventory:
+
+Stock counts or quotas
+
+Low-stock alerts
+
+Pricing & VAT:
+
+Price per currency (LYD, USD)
+
+VAT configuration
+
+Margin configuration
+
+Express fee configuration
+
+Slot Capacity:
+
+per city/day/slot limit
+
+blackout dates
+
+Orders:
+
+full order view including sender identity (admin-only)
+
+recipient contact log
+
+status transitions
+
+cancellation rules enforcement
+
+reschedule tool
+
+Dispatch (manual):
+
+assign driver (internal list)
+
+mark picked-up / out-for-delivery / delivered
+
+delivery notes
+
+WhatsApp templates:
+
+AR/EN message templates with placeholders
+
+Loyalty:
+
+points rules
+
+ledger
+
+adjustments
+
+Subscriptions:
+
+plans, pricing, renewals, pauses
+
+Fraud:
+
+suspicious queue
+
+blacklist
+
+Content/CMS:
+
+banners, collections, featured sets, occasions calendar
+
+Users:
+
+customers, saved recipients, history
+
+16) Data model (minimum entities)
+
+User (customer)
+
+Recipient (saved)
+
+City
+
+Warehouse
+
+Product
+
+ProductImage
+
+Category
+
+Occasion
+
+Mood
+
+AddOn
+
+Cart
+
+Order
+
+OrderItem
+
+OrderAddOn
+
+PaymentTransaction
+
+Slot (date + slotIndex + capacity + used)
+
+DeliveryAssignment (driver, timestamps)
+
+WhatsAppContactLog (orderId, templateUsed, notes, outcome)
+
+LoyaltyLedger
+
+Subscription + SubscriptionInstance (deliveries)
+
+17) APIs (high-level)
+
+Provide REST/GraphQL API with:
+
+Auth (OTP)
+
+Catalog browse/search/filter
+
+Cart operations
+
+Slot availability
+
+Checkout + payment initiation
+
+Order status + tracking
+
+Points ledger + redemption
+
+Subscription management
+
+Admin endpoints for all modules
+
+18) Acceptance criteria
+
+Floward-like UI journey reproduced with Nyluver branding.
+
+Slot capacity works: hard cap 50 per slot/day/city, admin editable.
+
+Address optional; recipient coordination via WhatsApp operational workflow.
+
+Anonymous gifting enforced everywhere customer-facing.
+
+Card/PayPal payments only; currency rules enforced.
+
+No refunds enforced at system level.
+
+No substitutions enforced.
+
+Admin panel supports end-to-end operations without external tools.
+
+19) Output required from you (as the builder)
+
+Produce:
+
+Wireframes for each screen (mobile + admin)
+
+Database schema (PostgreSQL) + migrations
+
+API spec (OpenAPI)
+
+Mobile app codebase scaffold + core flows implemented
+
+Admin panel scaffold + core ops flows implemented
+
+Test plan (slot capacity, payment, status transitions, bilingual RTL)
+
+Deployment plan (staging/prod)
+
+Build this as an MVP in phases:
+
+Phase 1: catalog → checkout → slots → admin ops → WhatsApp workflow → manual dispatch
+
+Phase 2: loyalty → subscriptions → fraud queue → analytics improvements
+
+Phase 3: multi-city expansion tools, driver app, automation for dispatch

@@ -1,0 +1,31 @@
+const Colors = {
+  primary: '#1B3A2D',
+  primaryLight: '#2D5A45',
+  gold: '#C9A96E',
+  goldLight: '#D4BC8E',
+  goldDark: '#A88B4A',
+  cream: '#FDFBF7',
+  creamDark: '#F5F0E8',
+  rose: '#D4A0A0',
+  roseLight: '#E8C4C4',
+  text: '#1A1A1A',
+  textSecondary: '#6B6B6B',
+  textTertiary: '#9B9B9B',
+  border: '#E8E4DE',
+  borderLight: '#F0ECE6',
+  white: '#FFFFFF',
+  black: '#000000',
+  error: '#D94F4F',
+  success: '#4CAF50',
+  warning: '#F5A623',
+  overlay: 'rgba(0,0,0,0.5)',
+  light: {
+    text: '#1A1A1A',
+    background: '#FDFBF7',
+    tint: '#1B3A2D',
+    tabIconDefault: '#9B9B9B',
+    tabIconSelected: '#1B3A2D',
+  },
+};
+
+export default Colors;

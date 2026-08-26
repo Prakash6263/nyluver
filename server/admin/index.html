@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nyluver Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F8F6F3;
+  --card: #FFFFFF;
+  --border: #E8E4DE;
+  --green: #1B3A2D;
+  --green-light: #2D5A45;
+  --gold: #C9A96E;
+  --gold-light: #E8D8B8;
+  --text: #1B3A2D;
+  --text-secondary: #6B7C74;
+  --red: #C04040;
+  --blue: #3B82F6;
+  --amber: #D97706;
+  --success: #16A34A;
+  --sidebar-w: 240px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display:flex; min-height:100vh; }
+.sidebar { width:var(--sidebar-w); background:var(--green); color:#fff; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; z-index:100; }
+.sidebar-brand { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,.1); }
+.sidebar-brand h1 { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; color:var(--gold); }
+.sidebar-brand span { font-size:11px; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:2px; }
+.sidebar-nav { padding:12px 0; }
+.sidebar-nav a { display:flex; align-items:center; gap:12px; padding:10px 20px; color:rgba(255,255,255,.7); text-decoration:none; font-size:13px; font-weight:500; transition:all .2s; cursor:pointer; }
+.sidebar-nav a:hover, .sidebar-nav a.active { background:rgba(255,255,255,.1); color:#fff; }
+.sidebar-nav a.active { border-right:3px solid var(--gold); }
+.sidebar-nav .section-label { padding:16px 20px 6px; font-size:10px; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.3); }
+.main { margin-left:var(--sidebar-w); flex:1; padding:24px 32px; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+.page-header h2 { font-family:'Playfair Display',serif; font-size:24px; font-weight:600; }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:none; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
+.btn-primary { background:var(--green); color:#fff; }
+.btn-primary:hover { background:var(--green-light); }
+.btn-gold { background:var(--gold); color:#fff; }
+.btn-gold:hover { background:#B89A60; }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+.btn-outline:hover { background:#f5f3f0; }
+.btn-sm { padding:5px 10px; font-size:12px; }
+.card { background:var(--card); border-radius:12px; border:1px solid var(--border); padding:20px; margin-bottom:16px; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--card); border-radius:12px; border:1px solid var(--border); padding:20px; }
+.stat-card .label { font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.stat-card .value { font-family:'Playfair Display',serif; font-size:28px; font-weight:700; color:var(--green); }
+.stat-card .sub { font-size:11px; color:var(--text-secondary); margin-top:4px; }
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:10px 12px; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); border-bottom:2px solid var(--border); }
+td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+tr:hover td { background:#FAFAF8; }
+.badge { display:inline-block; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.badge-green { background:#E6F4EA; color:#16A34A; }
+.badge-amber { background:#FEF3CD; color:#D97706; }
+.badge-red { background:#FDE8E8; color:#C04040; }
+.badge-blue { background:#DBEAFE; color:#3B82F6; }
+.badge-gray { background:#F3F4F6; color:#6B7C74; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.form-group input, .form-group textarea, .form-group select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:'Inter',sans-serif; background:#fff; color:var(--text); }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,169,110,.15); }
+.form-group textarea { min-height:80px; resize:vertical; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+.modal { background:#fff; border-radius:16px; padding:24px; width:90%; max-width:600px; max-height:85vh; overflow-y:auto; }
+.modal h3 { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:16px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.login-container { display:flex; align-items:center; justify-content:center; min-height:100vh; width:100%; }
+.login-card { background:#fff; border-radius:16px; padding:40px; width:360px; text-align:center; border:1px solid var(--border); }
+.login-card h1 { font-family:'Playfair Display',serif; color:var(--green); margin-bottom:6px; }
+.login-card .subtitle { color:var(--text-secondary); font-size:13px; margin-bottom:24px; }
+.tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--bg); border-radius:10px; padding:4px; }
+.tab { flex:1; padding:8px; text-align:center; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; color:var(--text-secondary); }
+.tab.active { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+.search-bar { display:flex; gap:8px; margin-bottom:16px; }
+.search-bar input { flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; }
+.search-bar input:focus { outline:none; border-color:var(--gold); }
+.empty-state { text-align:center; padding:40px; color:var(--text-secondary); }
+.empty-state p { font-size:14px; }
+.toggle { width:40px; height:22px; border-radius:11px; background:#ccc; position:relative; cursor:pointer; transition:background .3s; }
+.toggle.active { background:var(--success); }
+.toggle::after { content:''; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff; top:2px; left:2px; transition:left .3s; }
+.toggle.active::after { left:20px; }
+.tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; background:var(--gold-light); color:var(--green); margin:2px; }
+.img-thumb { width:48px; height:48px; border-radius:8px; object-fit:cover; }
+.status-select { padding:4px 8px; border:1px solid var(--border); border-radius:6px; font-size:12px; background:#fff; }
+.loading { text-align:center; padding:40px; color:var(--text-secondary); }
+.flex-between { display:flex; justify-content:space-between; align-items:center; }
+.hidden { display:none !important; }
+.chip-list { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { padding:4px 10px; border-radius:20px; font-size:12px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
+.chip.selected { background:var(--green); color:#fff; border-color:var(--green); }
+@media(max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .form-row,.form-row-3 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API = '';
+let currentUser = null;
+let currentPage = 'dashboard';
+let pageData = {};
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    credentials: 'include',
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
+async function checkAuth() {
+  try {
+    const { user } = await api('/api/auth/me');
+    if (user && user.role === 'admin') { currentUser = user; renderApp(); }
+    else { renderLogin(); }
+  } catch { renderLogin(); }
+}
+
+function renderLogin() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="login-container">
+      <div class="login-card">
+        <h1>Nyluver</h1>
+        <p class="subtitle">Admin Dashboard</p>
+        <div id="login-form">
+          <div class="form-group">
+            <label>Admin Phone</label>
+            <input id="login-phone" placeholder="+218910000000" value="+218910000000">
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="sendAdminOtp()">Send OTP</button>
+        </div>
+        <div id="otp-form" class="hidden">
+          <div class="form-group">
+            <label>Enter OTP Code</label>
+            <input id="login-otp" placeholder="123456" maxlength="6">
+          </div>
+          <p id="dev-otp" style="font-size:11px;color:var(--text-secondary);margin-bottom:12px;"></p>
+          <button class="btn btn-primary" style="width:100%" onclick="verifyAdminOtp()">Login</button>
+        </div>
+        <p id="login-error" style="color:var(--red);font-size:12px;margin-top:12px;"></p>
+      </div>
+    </div>`;
+}
+
+async function sendAdminOtp() {
+  const phone = document.getElementById('login-phone').value;
+  try {
+    const res = await api('/api/auth/send-otp', { method: 'POST', body: { phone } });
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('otp-form').classList.remove('hidden');
+    if (res.devCode) document.getElementById('dev-otp').textContent = 'Dev code: ' + res.devCode;
+  } catch (e) { document.getElementById('login-error').textContent = e.message; }
+}
+
+async function verifyAdminOtp() {
+  const phone = document.getElementById('login-phone').value;
+  const code = document.getElementById('login-otp').value;
+  try {
+    const res = await api('/api/auth/admin-login', { method: 'POST', body: { phone, code } });
+    currentUser = res.user;
+    renderApp();
+  } catch (e) { document.getElementById('login-error').textContent = e.message; }
+}
+
+function renderApp() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="sidebar">
+      <div class="sidebar-brand"><h1>Nyluver</h1><span>Admin Panel</span></div>
+      <nav class="sidebar-nav">
+        <a onclick="nav('dashboard')" data-page="dashboard">&#9632; Dashboard</a>
+        <div class="section-label">Catalog</div>
+        <a onclick="nav('products')" data-page="products">&#9827; Products</a>
+        <a onclick="nav('categories')" data-page="categories">&#9733; Categories</a>
+        <a onclick="nav('occasions')" data-page="occasions">&#10047; Occasions</a>
+        <a onclick="nav('moods')" data-page="moods">&#9830; Moods</a>
+        <a onclick="nav('addons')" data-page="addons">&#10010; Add-Ons</a>
+        <div class="section-label">Operations</div>
+        <a onclick="nav('orders')" data-page="orders">&#9993; Orders</a>
+        <a onclick="nav('drivers')" data-page="drivers">&#9951; Drivers</a>
+        <a onclick="nav('slots')" data-page="slots">&#9201; Slots</a>
+        <div class="section-label">Marketing</div>
+        <a onclick="nav('promos')" data-page="promos">&#9889; Promo Codes</a>
+        <a onclick="nav('banners')" data-page="banners">&#9634; Banners</a>
+        <a onclick="nav('loyalty')" data-page="loyalty">&#9813; Loyalty</a>
+        <a onclick="nav('subscriptions')" data-page="subscriptions">&#8634; Subscriptions</a>
+        <div class="section-label">System</div>
+        <a onclick="nav('whatsapp')" data-page="whatsapp">&#9742; WhatsApp</a>
+        <a onclick="nav('fraud')" data-page="fraud">&#9888; Fraud</a>
+        <a onclick="nav('users')" data-page="users">&#9823; Users</a>
+        <a onclick="nav('cities')" data-page="cities">&#9960; Cities</a>
+      </nav>
+    </div>
+    <div class="main" id="page-content"></div>`;
+  nav('dashboard');
+}
+
+function nav(page) {
+  currentPage = page;
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  loadPage(page);
+}
+
+async function loadPage(page) {
+  const el = document.getElementById('page-content');
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    switch(page) {
+      case 'dashboard': await renderDashboard(el); break;
+      case 'products': await renderProducts(el); break;
+      case 'categories': await renderCategories(el); break;
+      case 'occasions': await renderOccasions(el); break;
+      case 'moods': await renderMoods(el); break;
+      case 'addons': await renderAddOns(el); break;
+      case 'orders': await renderOrders(el); break;
+      case 'drivers': await renderDrivers(el); break;
+      case 'slots': await renderSlots(el); break;
+      case 'promos': await renderPromos(el); break;
+      case 'banners': await renderBanners(el); break;
+      case 'loyalty': await renderLoyalty(el); break;
+      case 'subscriptions': await renderSubscriptions(el); break;
+      case 'whatsapp': await renderWhatsApp(el); break;
+      case 'fraud': await renderFraud(el); break;
+      case 'users': await renderUsers(el); break;
+      case 'cities': await renderCities(el); break;
+    }
+  } catch(e) { el.innerHTML = `<div class="card"><p style="color:var(--red)">${e.message}</p></div>`; }
+}
+
+// ═══════ DASHBOARD ═══════
+async function renderDashboard(el) {
+  const d = await api('/api/admin/dashboard');
+  const statusMap = {};
+  (d.statusBreakdown || []).forEach(s => statusMap[s.status] = s.count);
+  el.innerHTML = `
+    <div class="page-header"><h2>Dashboard</h2><span style="color:var(--text-secondary);font-size:13px">Welcome back, ${currentUser.nameEn || 'Admin'}</span></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Total Orders</div><div class="value">${d.totalOrders}</div></div>
+      <div class="stat-card"><div class="label">Products</div><div class="value">${d.totalProducts}</div></div>
+      <div class="stat-card"><div class="label">Customers</div><div class="value">${d.totalUsers}</div></div>
+      <div class="stat-card"><div class="label">Today's Revenue</div><div class="value">${d.todayRevenue.toFixed(2)} <small style="font-size:14px">LYD</small></div></div>
+    </div>
+    <div class="card">
+      <h3 style="font-family:'Playfair Display',serif;margin-bottom:12px">Orders by Status</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        ${['pending_payment','paid','awaiting_recipient','accepted','in_prep','ready','out_for_delivery','delivered','failed_delivery','cancelled'].map(s =>
+          `<div style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);font-size:13px"><span style="font-weight:600">${statusMap[s]||0}</span> <span style="color:var(--text-secondary)">${s.replace(/_/g,' ')}</span></div>`
+        ).join('')}
+      </div>
+    </div>`;
+}
+
+// ═══════ PRODUCTS ═══════
+async function renderProducts(el) {
+  const products = await api('/api/admin/products');
+  const cats = await api('/api/admin/categories');
+  const catMap = {};
+  cats.forEach(c => catMap[c.id] = c.nameEn);
+  el.innerHTML = `
+    <div class="page-header"><h2>Products</h2><button class="btn btn-primary" onclick="showProductModal()">+ Add Product</button></div>
+    <div class="card" style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Product</th><th>Category</th><th>Price (LYD)</th><th>Price (USD)</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>${products.map(p => `
+          <tr>
+            <td><strong>${p.nameEn}</strong><br><small style="color:var(--text-secondary)">${p.nameAr}</small></td>
+            <td>${catMap[p.categoryId] || '-'}</td>
+            <td>${p.priceLYD}</td>
+            <td>$${p.priceUSD}</td>
+            <td>${p.stockCount}</td>
+            <td>${p.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Inactive</span>'}
+                ${p.isFeatured ? '<span class="badge badge-amber">Featured</span>' : ''}
+                ${p.isPopular ? '<span class="badge badge-blue">Popular</span>' : ''}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">Edit</button></td>
+          </tr>`).join('')}</tbody>
+      </table>
+      ${products.length === 0 ? '<div class="empty-state"><p>No products yet</p></div>' : ''}
+    </div>`;
+}
+
+async function showProductModal(id) {
+  let product = { nameEn:'', nameAr:'', descriptionEn:'', descriptionAr:'', priceLYD:'0', priceUSD:'0', categoryId:'', stockCount:0, isFeatured:false, isPopular:false, expressEligible:false, isActive:true };
+  if (id) {
+    product = await api('/api/products/' + id);
+  }
+  const cats = await api('/api/admin/categories');
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>${id ? 'Edit' : 'Add'} Product</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Name (EN)</label><input id="mp-nameEn" value="${product.nameEn||''}"></div>
+        <div class="form-group"><label>Name (AR)</label><input id="mp-nameAr" value="${product.nameAr||''}" dir="rtl"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Description (EN)</label><textarea id="mp-descEn">${product.descriptionEn||''}</textarea></div>
+        <div class="form-group"><label>Description (AR)</label><textarea id="mp-descAr" dir="rtl">${product.descriptionAr||''}</textarea></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Price LYD</label><input id="mp-priceLYD" type="number" value="${product.priceLYD}"></div>
+        <div class="form-group"><label>Price USD</label><input id="mp-priceUSD" type="number" value="${product.priceUSD}"></div>
+        <div class="form-group"><label>Category</label><select id="mp-cat">${cats.map(c=>`<option value="${c.id}" ${c.id===product.categoryId?'selected':''}>${c.nameEn}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group"><label>Stock Count</label><input id="mp-stock" type="number" value="${product.stockCount||0}"></div>
+        <div class="form-group"><label>Featured</label><select id="mp-feat"><option value="false" ${!product.isFeatured?'selected':''}>No</option><option value="true" ${product.isFeatured?'selected':''}>Yes</option></select></div>
+        <div class="form-group"><label>Popular</label><select id="mp-pop"><option value="false" ${!product.isPopular?'selected':''}>No</option><option value="true" ${product.isPopular?'selected':''}>Yes</option></select></div>
+      </div>
+      <div class="form-group"><label>Image URLs (one per line)</label><textarea id="mp-imgs">${(product.images||[]).map(i=>i.url||i).join('\n')}</textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveProduct('${id||''}')">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveProduct(id) {
+  const data = {
+    nameEn: document.getElementById('mp-nameEn').value,
+    nameAr: document.getElementById('mp-nameAr').value,
+    descriptionEn: document.getElementById('mp-descEn').value,
+    descriptionAr: document.getElementById('mp-descAr').value,
+    priceLYD: document.getElementById('mp-priceLYD').value,
+    priceUSD: document.getElementById('mp-priceUSD').value,
+    categoryId: document.getElementById('mp-cat').value,
+    stockCount: parseInt(document.getElementById('mp-stock').value),
+    isFeatured: document.getElementById('mp-feat').value === 'true',
+    isPopular: document.getElementById('mp-pop').value === 'true',
+    images: document.getElementById('mp-imgs').value.split('\n').map(u=>u.trim()).filter(Boolean),
+  };
+  if (id) await api('/api/admin/products/' + id, { method:'PUT', body:data });
+  else await api('/api/admin/products', { method:'POST', body:data });
+  document.querySelector('.modal-overlay')?.remove();
+  nav('products');
+}
+window.editProduct = id => showProductModal(id);
+
+// ═══════ CATEGORIES ═══════
+async function renderCategories(el) {
+  const cats = await api('/api/admin/categories');
+  el.innerHTML = `
+    <div class="page-header"><h2>Categories</h2><button class="btn btn-primary" onclick="showCategoryModal()">+ Add Category</button></div>
+    <div class="card"><table>
+      <thead><tr><th>Name (EN)</th><th>Name (AR)</th><th>Slug</th><th>Sort</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${cats.map(c=>`<tr>
+        <td>${c.nameEn}</td><td>${c.nameAr}</td><td><code>${c.slug}</code></td><td>${c.sortOrder}</td>
+        <td>${c.isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="showCategoryModal('${c.id}','${c.nameEn}','${c.nameAr}','${c.slug}',${c.sortOrder},${c.isActive})">Edit</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function showCategoryModal(id,nameEn='',nameAr='',slug='',sort=0,active=true) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  modal.innerHTML = `<div class="modal"><h3>${id?'Edit':'Add'} Category</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="mc-en" value="${nameEn}"></div><div class="form-group"><label>Name AR</label><input id="mc-ar" value="${nameAr}" dir="rtl"></div></div>
+    <div class="form-row"><div class="form-group"><label>Slug</label><input id="mc-slug" value="${slug}"></div><div class="form-group"><label>Sort Order</label><input id="mc-sort" type="number" value="${sort}"></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveCategory('${id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveCategory(id) {
+  const data = { nameEn:document.getElementById('mc-en').value, nameAr:document.getElementById('mc-ar').value, slug:document.getElementById('mc-slug').value, sortOrder:parseInt(document.getElementById('mc-sort').value) };
+  if(id) await api('/api/admin/categories/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/categories',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('categories');
+}
+
+// ═══════ OCCASIONS ═══════
+async function renderOccasions(el) {
+  const items = await api('/api/occasions');
+  el.innerHTML = `<div class="page-header"><h2>Occasions</h2><button class="btn btn-primary" onclick="showOccasionModal()">+ Add Occasion</button></div>
+    <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>Slug</th><th>Color</th><th>Actions</th></tr></thead>
+    <tbody>${items.map(o=>`<tr><td>${o.nameEn}</td><td>${o.nameAr}</td><td><code>${o.slug}</code></td>
+      <td><span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:${o.color||'#ccc'}"></span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='showOccasionModal(${JSON.stringify(o)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showOccasionModal(o) {
+  o = o || { nameEn:'',nameAr:'',slug:'',color:'#E8D4E8',sortOrder:0 };
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${o.id?'Edit':'Add'} Occasion</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="mo-en" value="${o.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="mo-ar" value="${o.nameAr}" dir="rtl"></div></div>
+    <div class="form-row"><div class="form-group"><label>Slug</label><input id="mo-slug" value="${o.slug}"></div><div class="form-group"><label>Color</label><input id="mo-color" type="color" value="${o.color||'#E8D4E8'}"></div></div>
+    <div class="form-group"><label>Sort Order</label><input id="mo-sort" type="number" value="${o.sortOrder||0}"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveOccasion('${o.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveOccasion(id) {
+  const data={nameEn:document.getElementById('mo-en').value,nameAr:document.getElementById('mo-ar').value,slug:document.getElementById('mo-slug').value,color:document.getElementById('mo-color').value,sortOrder:parseInt(document.getElementById('mo-sort').value)};
+  if(id) await api('/api/admin/occasions/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/occasions',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('occasions');
+}
+
+// ═══════ MOODS ═══════
+async function renderMoods(el) {
+  const items = await api('/api/moods');
+  el.innerHTML = `<div class="page-header"><h2>Moods</h2><button class="btn btn-primary" onclick="showMoodModal()">+ Add Mood</button></div>
+    <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>Slug</th><th>Color</th><th>Actions</th></tr></thead>
+    <tbody>${items.map(m=>`<tr><td>${m.nameEn}</td><td>${m.nameAr}</td><td><code>${m.slug}</code></td>
+      <td><span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:${m.color||'#ccc'}"></span></td>
+      <td><button class="btn btn-outline btn-sm" onclick='showMoodModal(${JSON.stringify(m)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showMoodModal(m) {
+  m = m || { nameEn:'',nameAr:'',slug:'',color:'#C9A96E',gradientStart:'#C9A96E',gradientEnd:'#A88B4A',sortOrder:0 };
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${m.id?'Edit':'Add'} Mood</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="mm-en" value="${m.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="mm-ar" value="${m.nameAr}" dir="rtl"></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Slug</label><input id="mm-slug" value="${m.slug}"></div><div class="form-group"><label>Color</label><input id="mm-color" type="color" value="${m.color||'#C9A96E'}"></div><div class="form-group"><label>Sort</label><input id="mm-sort" type="number" value="${m.sortOrder||0}"></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveMood('${m.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveMood(id) {
+  const data={nameEn:document.getElementById('mm-en').value,nameAr:document.getElementById('mm-ar').value,slug:document.getElementById('mm-slug').value,color:document.getElementById('mm-color').value,sortOrder:parseInt(document.getElementById('mm-sort').value)};
+  if(id) await api('/api/admin/moods/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/moods',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('moods');
+}
+
+// ═══════ ADD-ONS ═══════
+async function renderAddOns(el) {
+  const items = await api('/api/admin/add-ons');
+  el.innerHTML = `<div class="page-header"><h2>Add-Ons</h2><button class="btn btn-primary" onclick="showAddOnModal()">+ Add</button></div>
+    <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>LYD</th><th>USD</th><th>Category</th><th>Actions</th></tr></thead>
+    <tbody>${items.map(a=>`<tr><td>${a.nameEn}</td><td>${a.nameAr}</td><td>${a.priceLYD}</td><td>$${a.priceUSD}</td><td>${a.category||'-'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showAddOnModal(${JSON.stringify(a)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showAddOnModal(a) {
+  a = a || {nameEn:'',nameAr:'',priceLYD:'0',priceUSD:'0',category:'',sortOrder:0};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${a.id?'Edit':'Add'} Add-On</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="ma-en" value="${a.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="ma-ar" value="${a.nameAr}" dir="rtl"></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Price LYD</label><input id="ma-lyd" type="number" value="${a.priceLYD}"></div><div class="form-group"><label>Price USD</label><input id="ma-usd" type="number" value="${a.priceUSD}"></div><div class="form-group"><label>Category</label><input id="ma-cat" value="${a.category||''}"></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveAddOn('${a.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveAddOn(id) {
+  const data={nameEn:document.getElementById('ma-en').value,nameAr:document.getElementById('ma-ar').value,priceLYD:document.getElementById('ma-lyd').value,priceUSD:document.getElementById('ma-usd').value,category:document.getElementById('ma-cat').value};
+  if(id) await api('/api/admin/add-ons/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/add-ons',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('addons');
+}
+
+// ═══════ ORDERS ═══════
+async function renderOrders(el) {
+  const orders = await api('/api/admin/orders');
+  const statusColors = {pending_payment:'gray',paid:'blue',awaiting_recipient:'amber',accepted:'blue',in_prep:'amber',ready:'green',out_for_delivery:'blue',delivered:'green',failed_delivery:'red',declined:'red',cancelled:'gray',rescheduled:'amber'};
+  el.innerHTML = `<div class="page-header"><h2>Orders</h2></div>
+    <div class="tabs" id="order-tabs">
+      <div class="tab active" onclick="filterOrders('')">All (${orders.length})</div>
+      <div class="tab" onclick="filterOrders('paid')">Paid</div>
+      <div class="tab" onclick="filterOrders('in_prep')">In Prep</div>
+      <div class="tab" onclick="filterOrders('ready')">Ready</div>
+      <div class="tab" onclick="filterOrders('out_for_delivery')">Delivering</div>
+      <div class="tab" onclick="filterOrders('delivered')">Delivered</div>
+    </div>
+    <div class="card" style="overflow-x:auto"><table>
+      <thead><tr><th>Order #</th><th>Recipient</th><th>Total</th><th>Status</th><th>Date</th><th>Flagged</th><th>Actions</th></tr></thead>
+      <tbody id="orders-tbody">${orders.map(o=>`<tr data-status="${o.status}">
+        <td><strong>${o.orderNumber}</strong></td>
+        <td>${o.recipientName}<br><small style="color:var(--text-secondary)">${o.recipientPhone}</small></td>
+        <td>${o.total} LYD</td>
+        <td><span class="badge badge-${statusColors[o.status]||'gray'}">${o.status.replace(/_/g,' ')}</span></td>
+        <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+        <td>${o.isFlagged?'<span class="badge badge-red">Flagged</span>':'-'}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')">View</button></td>
+      </tr>`).join('')}</tbody>
+    </table>${orders.length===0?'<div class="empty-state"><p>No orders yet</p></div>':''}</div>`;
+}
+
+function filterOrders(status) {
+  document.querySelectorAll('#order-tabs .tab').forEach((t,i) => t.classList.toggle('active', (status===''&&i===0)||(t.textContent.toLowerCase().includes(status.replace(/_/g,' ')))));
+  document.querySelectorAll('#orders-tbody tr').forEach(tr => {
+    tr.style.display = !status || tr.dataset.status === status ? '' : 'none';
+  });
+}
+
+async function showOrderDetail(id) {
+  const order = await api('/api/admin/orders/' + id);
+  const drivers = await api('/api/admin/drivers');
+  const templates = await api('/api/admin/whatsapp-templates');
+  const statuses = ['pending_payment','paid','awaiting_recipient','accepted','in_prep','ready','out_for_delivery','delivered','failed_delivery','declined','cancelled','rescheduled'];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.onclick = e => { if(e.target===modal)modal.remove(); };
+  modal.innerHTML = `<div class="modal" style="max-width:700px">
+    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><span class="badge badge-blue">${order.status.replace(/_/g,' ')}</span></div>
+    <div style="margin:16px 0;padding:16px;background:var(--bg);border-radius:8px">
+      <div class="form-row">
+        <div><strong>Recipient:</strong> ${order.recipientName}<br>${order.recipientPhone}</div>
+        <div><strong>Sender:</strong> ${order.sender?.nameEn||'N/A'}<br>${order.sender?.phone||'N/A'}</div>
+      </div>
+      <div style="margin-top:8px"><strong>Address:</strong> ${order.address||'N/A'} &nbsp; <strong>Slot:</strong> ${order.slotDate||'N/A'} ${order.slotTime||''}</div>
+      ${order.cardMessage?`<div style="margin-top:8px"><strong>Card Message:</strong> <em>"${order.cardMessage}"</em></div>`:''}
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="sendWA('${order.recipientPhone||''}','Hello ${order.recipientName}! Regarding your Nyluver gift order #${order.orderNumber} 🌸','${order.id}',this)" class="btn btn-sm" style="background:#25D366;color:#fff">&#9742; Message Recipient</button>
+        ${order.sender?.phone?`<button onclick="sendWA('${order.sender.phone}','Hello ${order.sender.nameEn||''}! Regarding your Nyluver order #${order.orderNumber} 🌸','${order.id}',this)" class="btn btn-sm btn-outline" style="color:#25D366;border-color:#25D366">&#9742; Message Sender</button>`:''}
+      </div>
+    </div>
+    <table style="margin-bottom:16px"><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+    <tbody>${(order.items||[]).map(i=>`<tr><td>${i.productNameEn}<br><small>${i.productNameAr}</small>${(i.addOns||[]).map(a=>`<br><span class="tag">${a.nameEn}</span>`).join('')}</td><td>${i.quantity}</td><td>${i.unitPrice} LYD</td></tr>`).join('')}
+    <tr style="font-weight:600"><td colspan="2">Total</td><td>${order.total} LYD</td></tr></tbody></table>
+    <div class="form-row">
+      <div class="form-group"><label>Update Status</label>
+        <select id="od-status">${statuses.map(s=>`<option value="${s}" ${s===order.status?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label>Assign Driver</label>
+        <select id="od-driver"><option value="">-- Select --</option>${drivers.map(d=>`<option value="${d.id}" ${d.id===order.driverId?'selected':''}>${d.name}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-group"><label>Admin Notes</label><textarea id="od-notes">${order.adminNotes||''}</textarea></div>
+    <h4 style="margin:12px 0 8px">WhatsApp Contact Log</h4>
+    ${(order.whatsappLogs||[]).map(l=>`<div style="padding:6px;border-bottom:1px solid var(--border);font-size:12px"><strong>${l.templateUsed||'Manual'}</strong> - ${l.outcome||'sent'} <small style="color:var(--text-secondary)">${new Date(l.contactedAt).toLocaleString()}</small>${l.notes?`<br>${l.notes}`:''}</div>`).join('')}
+    <div class="form-row" style="margin-top:8px">
+      <div class="form-group"><label>Template</label><select id="od-wa-tpl"><option value="">Manual</option>${templates.map(t=>`<option value="${t.nameEn}">${t.nameEn}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Outcome</label><input id="od-wa-out" placeholder="responded, no answer..."></div>
+    </div>
+    <div class="form-group"><label>WA Notes</label><input id="od-wa-notes" placeholder="Notes..."></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Close</button>
+      <button class="btn btn-gold" onclick="logWhatsApp('${order.id}')">Log WA Contact</button>
+      <button class="btn btn-primary" onclick="updateOrder('${order.id}')">Save Changes</button>
+    </div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function updateOrder(id) {
+  const status = document.getElementById('od-status').value;
+  const notes = document.getElementById('od-notes').value;
+  const driverId = document.getElementById('od-driver').value;
+  await api('/api/admin/orders/'+id+'/status', {method:'PUT', body:{status,notes}});
+  if(driverId) await api('/api/admin/orders/'+id+'/assign-driver', {method:'POST', body:{driverId}});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('orders');
+}
+
+async function sendWA(phone, message, orderId, btn) {
+  if (!phone) { alert('No phone number available'); return; }
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ Sending...';
+  btn.disabled = true;
+  try {
+    const result = await api('/api/admin/whatsapp/send', {method:'POST', body:{phone, message, orderId}});
+    if (result.success) {
+      btn.innerHTML = '✅ Sent!';
+      btn.style.background = '#4CAF50';
+      btn.style.color = '#fff';
+      setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; btn.style.background = ''; btn.style.color = ''; }, 3000);
+    } else {
+      throw new Error('Send failed');
+    }
+  } catch(e) {
+    btn.innerHTML = '❌ Failed';
+    btn.style.background = '#f44336';
+    btn.style.color = '#fff';
+    setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; btn.style.background = ''; btn.style.color = ''; }, 3000);
+  }
+}
+
+async function logWhatsApp(orderId) {
+  await api('/api/admin/whatsapp-log', {method:'POST', body:{
+    orderId, templateUsed:document.getElementById('od-wa-tpl').value||'Manual',
+    outcome:document.getElementById('od-wa-out').value, notes:document.getElementById('od-wa-notes').value, language:'en'
+  }});
+  showOrderDetail(orderId);
+}
+
+// ═══════ DRIVERS ═══════
+async function renderDrivers(el) {
+  const drivers = await api('/api/admin/drivers');
+  el.innerHTML = `<div class="page-header"><h2>Drivers</h2><button class="btn btn-primary" onclick="showDriverModal()">+ Add Driver</button></div>
+    <div class="card"><table><thead><tr><th>Name</th><th>Phone</th><th>Active</th><th>Actions</th></tr></thead>
+    <tbody>${drivers.map(d=>`<tr><td>${d.name}</td><td>${d.phone}</td><td>${d.isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showDriverModal(${JSON.stringify(d)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showDriverModal(d) {
+  d = d || {name:'',phone:'',isActive:true};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${d.id?'Edit':'Add'} Driver</h3>
+    <div class="form-row"><div class="form-group"><label>Name</label><input id="md-name" value="${d.name}"></div><div class="form-group"><label>Phone</label><input id="md-phone" value="${d.phone}"></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveDriver('${d.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveDriver(id) {
+  const data={name:document.getElementById('md-name').value,phone:document.getElementById('md-phone').value};
+  if(id) await api('/api/admin/drivers/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/drivers',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('drivers');
+}
+
+// ═══════ SLOTS ═══════
+async function renderSlots(el) {
+  const cities = await api('/api/admin/cities');
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML = `<div class="page-header"><h2>Delivery Slots</h2></div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><label>City</label><select id="slot-city">${cities.map(c=>`<option value="${c.id}">${c.nameEn}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Date</label><input id="slot-date" type="date" value="${today}"></div>
+      </div>
+      <button class="btn btn-primary" onclick="loadSlots()">Load Slots</button>
+      <div id="slots-container" style="margin-top:16px"></div>
+    </div>
+    <div class="card"><h3 style="font-family:'Playfair Display',serif;margin-bottom:12px">Blackout Dates</h3>
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group"><label>Date</label><input id="bo-date" type="date"></div>
+        <div class="form-group"><label>Reason</label><input id="bo-reason" placeholder="Holiday, etc."></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addBlackout()">Add Blackout</button>
+      <div id="blackout-list" style="margin-top:12px"></div>
+    </div>`;
+  loadBlackouts();
+}
+
+async function loadSlots() {
+  const cityId = document.getElementById('slot-city').value;
+  const date = document.getElementById('slot-date').value;
+  const slots = await api(`/api/admin/slots/${cityId}/${date}`);
+  document.getElementById('slots-container').innerHTML = `<table><thead><tr><th>Time</th><th>Capacity</th><th>Used</th><th>Available</th><th>Actions</th></tr></thead>
+    <tbody>${slots.map(s=>`<tr><td>${s.startTime} - ${s.endTime}</td><td><input class="slot-cap" data-id="${s.id}" type="number" value="${s.capacity}" style="width:60px;padding:4px;border:1px solid var(--border);border-radius:4px"></td><td>${s.used}</td><td>${s.capacity-s.used}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="updateSlot('${s.id}')">Update</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+async function updateSlot(id) {
+  const cap = document.querySelector(`input[data-id="${id}"]`).value;
+  await api('/api/admin/slots/'+id, {method:'PUT', body:{capacity:parseInt(cap)}});
+  loadSlots();
+}
+
+async function loadBlackouts() {
+  const cityId = document.getElementById('slot-city')?.value;
+  if(!cityId) return;
+  const bds = await api('/api/admin/blackout-dates/'+cityId);
+  document.getElementById('blackout-list').innerHTML = bds.map(b=>`<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid var(--border)"><span>${b.date} - ${b.reason||'No reason'}</span><button class="btn btn-danger btn-sm" onclick="removeBlackout('${b.id}')">Remove</button></div>`).join('') || '<p style="color:var(--text-secondary);font-size:13px">No blackout dates</p>';
+}
+
+async function addBlackout() {
+  const cityId = document.getElementById('slot-city').value;
+  await api('/api/admin/blackout-dates', {method:'POST', body:{cityId,date:document.getElementById('bo-date').value,reason:document.getElementById('bo-reason').value}});
+  loadBlackouts();
+}
+
+async function removeBlackout(id) {
+  await api('/api/admin/blackout-dates/'+id, {method:'DELETE'});
+  loadBlackouts();
+}
+
+// ═══════ PROMO CODES ═══════
+async function renderPromos(el) {
+  const promos = await api('/api/admin/promos');
+  el.innerHTML = `<div class="page-header"><h2>Promo Codes</h2><button class="btn btn-primary" onclick="showPromoModal()">+ Add Code</button></div>
+    <div class="card"><table><thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Used</th><th>Max</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${promos.map(p=>`<tr><td><code style="font-weight:600">${p.code}</code></td><td>${p.type}</td><td>${p.value}${p.type==='percentage'?'%':' LYD'}</td><td>${p.usedCount}</td><td>${p.maxUses||'∞'}</td>
+      <td>${p.isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showPromoModal(${JSON.stringify(p)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showPromoModal(p) {
+  p = p || {code:'',type:'percentage',value:'10',minOrderAmount:'',maxUses:'',isFirstOrderOnly:false,isActive:true};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${p.id?'Edit':'Add'} Promo Code</h3>
+    <div class="form-row"><div class="form-group"><label>Code</label><input id="mpr-code" value="${p.code}" style="text-transform:uppercase"></div><div class="form-group"><label>Type</label><select id="mpr-type"><option value="percentage" ${p.type==='percentage'?'selected':''}>Percentage</option><option value="fixed" ${p.type==='fixed'?'selected':''}>Fixed Amount</option></select></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Value</label><input id="mpr-val" type="number" value="${p.value}"></div><div class="form-group"><label>Min Order</label><input id="mpr-min" type="number" value="${p.minOrderAmount||''}"></div><div class="form-group"><label>Max Uses</label><input id="mpr-max" type="number" value="${p.maxUses||''}"></div></div>
+    <div class="form-row"><div class="form-group"><label>First Order Only</label><select id="mpr-fo"><option value="false" ${!p.isFirstOrderOnly?'selected':''}>No</option><option value="true" ${p.isFirstOrderOnly?'selected':''}>Yes</option></select></div><div class="form-group"><label>Active</label><select id="mpr-act"><option value="true" ${p.isActive?'selected':''}>Yes</option><option value="false" ${!p.isActive?'selected':''}>No</option></select></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="savePromo('${p.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function savePromo(id) {
+  const data={code:document.getElementById('mpr-code').value,type:document.getElementById('mpr-type').value,value:document.getElementById('mpr-val').value,
+    minOrderAmount:document.getElementById('mpr-min').value||null,maxUses:document.getElementById('mpr-max').value?parseInt(document.getElementById('mpr-max').value):null,
+    isFirstOrderOnly:document.getElementById('mpr-fo').value==='true',isActive:document.getElementById('mpr-act').value==='true'};
+  if(id) await api('/api/admin/promos/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/promos',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('promos');
+}
+
+// ═══════ BANNERS ═══════
+async function renderBanners(el) {
+  const banners = await api('/api/admin/banners');
+  el.innerHTML = `<div class="page-header"><h2>Banners</h2><button class="btn btn-primary" onclick="showBannerModal()">+ Add Banner</button></div>
+    <div class="card">${banners.map(b=>`<div style="display:flex;gap:12px;align-items:center;padding:12px;border-bottom:1px solid var(--border)">
+      <img src="${b.imageUrl}" style="width:120px;height:60px;border-radius:8px;object-fit:cover">
+      <div style="flex:1"><strong>${b.titleEn||'Untitled'}</strong><br><small style="color:var(--text-secondary)">${b.subtitleEn||''}</small></div>
+      <span class="badge badge-${b.isActive?'green':'gray'}">${b.isActive?'Active':'Inactive'}</span>
+      <button class="btn btn-outline btn-sm" onclick='showBannerModal(${JSON.stringify(b)})'>Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteBanner('${b.id}')">Del</button>
+    </div>`).join('')}${banners.length===0?'<div class="empty-state"><p>No banners</p></div>':''}</div>`;
+}
+
+function showBannerModal(b) {
+  b = b || {titleEn:'',titleAr:'',subtitleEn:'',subtitleAr:'',imageUrl:'',sortOrder:0,isActive:true};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${b.id?'Edit':'Add'} Banner</h3>
+    <div class="form-row"><div class="form-group"><label>Title EN</label><input id="mb-ten" value="${b.titleEn||''}"></div><div class="form-group"><label>Title AR</label><input id="mb-tar" value="${b.titleAr||''}" dir="rtl"></div></div>
+    <div class="form-row"><div class="form-group"><label>Subtitle EN</label><input id="mb-sen" value="${b.subtitleEn||''}"></div><div class="form-group"><label>Subtitle AR</label><input id="mb-sar" value="${b.subtitleAr||''}" dir="rtl"></div></div>
+    <div class="form-group"><label>Image URL</label><input id="mb-img" value="${b.imageUrl||''}"></div>
+    <div class="form-row"><div class="form-group"><label>Sort</label><input id="mb-sort" type="number" value="${b.sortOrder||0}"></div><div class="form-group"><label>Active</label><select id="mb-act"><option value="true" ${b.isActive!==false?'selected':''}>Yes</option><option value="false" ${b.isActive===false?'selected':''}>No</option></select></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveBanner('${b.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveBanner(id) {
+  const data={titleEn:document.getElementById('mb-ten').value,titleAr:document.getElementById('mb-tar').value,subtitleEn:document.getElementById('mb-sen').value,subtitleAr:document.getElementById('mb-sar').value,imageUrl:document.getElementById('mb-img').value,sortOrder:parseInt(document.getElementById('mb-sort').value),isActive:document.getElementById('mb-act').value==='true'};
+  if(id) await api('/api/admin/banners/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/banners',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('banners');
+}
+
+async function deleteBanner(id) {
+  if(!confirm('Delete this banner?')) return;
+  await api('/api/admin/banners/'+id,{method:'DELETE'});
+  nav('banners');
+}
+
+// ═══════ LOYALTY ═══════
+async function renderLoyalty(el) {
+  const config = await api('/api/admin/loyalty/config');
+  el.innerHTML = `<div class="page-header"><h2>Loyalty Program</h2></div>
+    <div class="card"><h3 style="font-family:'Playfair Display',serif;margin-bottom:16px">Configuration</h3>
+    <div class="form-row-3">
+      <div class="form-group"><label>Earn Type</label><select id="ly-type"><option value="percentage" ${config?.earnType==='percentage'?'selected':''}>Percentage of Order</option><option value="fixed" ${config?.earnType==='fixed'?'selected':''}>Fixed Points</option></select></div>
+      <div class="form-group"><label>Earn Value</label><input id="ly-val" type="number" value="${config?.earnValue||10}"></div>
+      <div class="form-group"><label>Points per Unit (redemption)</label><input id="ly-ppu" type="number" value="${config?.pointsPerUnit||100}"></div>
+    </div>
+    <div class="form-group"><label>Redemption Enabled</label><select id="ly-redeem"><option value="false" ${!config?.redemptionEnabled?'selected':''}>No</option><option value="true" ${config?.redemptionEnabled?'selected':''}>Yes</option></select></div>
+    <button class="btn btn-primary" onclick="saveLoyalty()">Save Configuration</button></div>`;
+}
+
+async function saveLoyalty() {
+  await api('/api/admin/loyalty/config', {method:'PUT', body:{
+    earnType:document.getElementById('ly-type').value,
+    earnValue:document.getElementById('ly-val').value,
+    pointsPerUnit:document.getElementById('ly-ppu').value,
+    redemptionEnabled:document.getElementById('ly-redeem').value==='true'
+  }});
+  alert('Loyalty config saved!');
+}
+
+// ═══════ SUBSCRIPTIONS ═══════
+async function renderSubscriptions(el) {
+  const plans = await api('/api/admin/subscription-plans');
+  el.innerHTML = `<div class="page-header"><h2>Subscription Plans</h2><button class="btn btn-primary" onclick="showSubPlanModal()">+ Add Plan</button></div>
+    <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>Frequency</th><th>LYD</th><th>USD</th><th>Actions</th></tr></thead>
+    <tbody>${plans.map(p=>`<tr><td>${p.nameEn}</td><td>${p.nameAr}</td><td><span class="badge badge-blue">${p.frequency}</span></td><td>${p.priceLYD}</td><td>$${p.priceUSD}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showSubPlanModal(${JSON.stringify(p)})'>Edit</button></td></tr>`).join('')}</tbody></table>
+    ${plans.length===0?'<div class="empty-state"><p>No subscription plans yet</p></div>':''}</div>`;
+}
+
+function showSubPlanModal(p) {
+  p = p || {nameEn:'',nameAr:'',descriptionEn:'',descriptionAr:'',frequency:'weekly',priceLYD:'0',priceUSD:'0'};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${p.id?'Edit':'Add'} Plan</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="ms-en" value="${p.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="ms-ar" value="${p.nameAr}" dir="rtl"></div></div>
+    <div class="form-row"><div class="form-group"><label>Desc EN</label><textarea id="ms-den">${p.descriptionEn||''}</textarea></div><div class="form-group"><label>Desc AR</label><textarea id="ms-dar" dir="rtl">${p.descriptionAr||''}</textarea></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Frequency</label><select id="ms-freq"><option value="weekly" ${p.frequency==='weekly'?'selected':''}>Weekly</option><option value="monthly" ${p.frequency==='monthly'?'selected':''}>Monthly</option></select></div>
+      <div class="form-group"><label>Price LYD</label><input id="ms-lyd" type="number" value="${p.priceLYD}"></div><div class="form-group"><label>Price USD</label><input id="ms-usd" type="number" value="${p.priceUSD}"></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveSubPlan('${p.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveSubPlan(id) {
+  const data={nameEn:document.getElementById('ms-en').value,nameAr:document.getElementById('ms-ar').value,descriptionEn:document.getElementById('ms-den').value,descriptionAr:document.getElementById('ms-dar').value,frequency:document.getElementById('ms-freq').value,priceLYD:document.getElementById('ms-lyd').value,priceUSD:document.getElementById('ms-usd').value};
+  if(id) await api('/api/admin/subscription-plans/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/subscription-plans',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('subscriptions');
+}
+
+// ═══════ WHATSAPP TEMPLATES ═══════
+async function renderWhatsApp(el) {
+  const templates = await api('/api/admin/whatsapp-templates');
+  el.innerHTML = `<div class="page-header"><h2>WhatsApp Templates</h2><button class="btn btn-primary" onclick="showWAModal()">+ Add Template</button></div>
+    <div class="card">${templates.map(t=>`<div style="padding:16px;border-bottom:1px solid var(--border)">
+      <div class="flex-between"><strong>${t.nameEn}</strong> / <span style="color:var(--text-secondary)">${t.nameAr}</span>
+        <button class="btn btn-outline btn-sm" onclick='showWAModal(${JSON.stringify(t)})'>Edit</button></div>
+      <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:13px">${t.bodyEn}</div>
+      <div style="margin-top:4px;padding:10px;background:var(--bg);border-radius:6px;font-size:13px" dir="rtl">${t.bodyAr}</div>
+      ${(t.placeholders||[]).length?`<div style="margin-top:6px">${t.placeholders.map(p=>`<span class="tag">{${p}}</span>`).join('')}</div>`:''}
+    </div>`).join('')}${templates.length===0?'<div class="empty-state"><p>No templates</p></div>':''}</div>`;
+}
+
+function showWAModal(t) {
+  t = t || {nameEn:'',nameAr:'',bodyEn:'',bodyAr:'',placeholders:[]};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${t.id?'Edit':'Add'} Template</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="mw-en" value="${t.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="mw-ar" value="${t.nameAr}" dir="rtl"></div></div>
+    <div class="form-group"><label>Body EN</label><textarea id="mw-ben" rows="4">${t.bodyEn}</textarea></div>
+    <div class="form-group"><label>Body AR</label><textarea id="mw-bar" rows="4" dir="rtl">${t.bodyAr}</textarea></div>
+    <div class="form-group"><label>Placeholders (comma-separated)</label><input id="mw-ph" value="${(t.placeholders||[]).join(', ')}"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveWATemplate('${t.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveWATemplate(id) {
+  const data={nameEn:document.getElementById('mw-en').value,nameAr:document.getElementById('mw-ar').value,bodyEn:document.getElementById('mw-ben').value,bodyAr:document.getElementById('mw-bar').value,placeholders:document.getElementById('mw-ph').value.split(',').map(s=>s.trim()).filter(Boolean)};
+  if(id) await api('/api/admin/whatsapp-templates/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/whatsapp-templates',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('whatsapp');
+}
+
+// ═══════ FRAUD ═══════
+async function renderFraud(el) {
+  const flags = await api('/api/admin/fraud');
+  el.innerHTML = `<div class="page-header"><h2>Fraud Detection</h2></div>
+    <div class="tabs"><div class="tab active" onclick="filterFraud(this,'all')">All</div><div class="tab" onclick="filterFraud(this,'unresolved')">Unresolved</div><div class="tab" onclick="filterFraud(this,'resolved')">Resolved</div></div>
+    <div class="card"><table><thead><tr><th>Date</th><th>Reason</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="fraud-tbody">${flags.map(f=>`<tr data-resolved="${f.resolved}">
+      <td>${new Date(f.createdAt).toLocaleDateString()}</td><td>${f.reason}</td><td>${f.orderId||'-'}</td>
+      <td>${f.resolved?'<span class="badge badge-green">Resolved</span>':'<span class="badge badge-red">Open</span>'}</td>
+      <td>${!f.resolved?`<button class="btn btn-outline btn-sm" onclick="resolveFraud('${f.id}')">Resolve</button>`:''}</td>
+    </tr>`).join('')}</tbody></table>
+    ${flags.length===0?'<div class="empty-state"><p>No fraud flags</p></div>':''}</div>`;
+}
+
+function filterFraud(tab,filter) {
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('#fraud-tbody tr').forEach(tr=>{
+    if(filter==='all') tr.style.display='';
+    else if(filter==='resolved') tr.style.display=tr.dataset.resolved==='true'?'':'none';
+    else tr.style.display=tr.dataset.resolved==='false'?'':'none';
+  });
+}
+
+async function resolveFraud(id) {
+  await api('/api/admin/fraud/'+id+'/resolve',{method:'PUT'});
+  nav('fraud');
+}
+
+// ═══════ USERS ═══════
+async function renderUsers(el) {
+  const users = await api('/api/admin/users');
+  el.innerHTML = `<div class="page-header"><h2>Users</h2></div>
+    <div class="card" style="overflow-x:auto"><table><thead><tr><th>Phone</th><th>Name</th><th>Role</th><th>Points</th><th>Blacklisted</th><th>Joined</th><th>Actions</th></tr></thead>
+    <tbody>${users.map(u=>`<tr>
+      <td>${u.phone}</td><td>${u.nameEn||u.nameAr||'-'}</td>
+      <td><span class="badge badge-${u.role==='admin'?'amber':'blue'}">${u.role}</span></td>
+      <td>${u.loyaltyPoints}</td>
+      <td>${u.isBlacklisted?'<span class="badge badge-red">Yes</span>':'-'}</td>
+      <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+      <td>${!u.isBlacklisted&&u.role!=='admin'?`<button class="btn btn-danger btn-sm" onclick="blacklistUser('${u.id}')">Blacklist</button>`:''}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function blacklistUser(id) {
+  if(!confirm('Blacklist this user?')) return;
+  await api('/api/admin/users/'+id+'/blacklist',{method:'POST'});
+  nav('users');
+}
+
+// ═══════ CITIES ═══════
+async function renderCities(el) {
+  const cities = await api('/api/admin/cities');
+  el.innerHTML = `<div class="page-header"><h2>Cities</h2><button class="btn btn-primary" onclick="showCityModal()">+ Add City</button></div>
+    <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>Currency</th><th>VAT</th><th>Mode</th><th>Actions</th></tr></thead>
+    <tbody>${cities.map(c=>`<tr><td>${c.nameEn}</td><td>${c.nameAr}</td><td>${c.currency}</td>
+      <td>${c.vatEnabled?c.vatPercent+'%':'Off'}</td><td>${c.inventoryMode}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showCityModal(${JSON.stringify(c)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showCityModal(c) {
+  c = c || {nameEn:'',nameAr:'',country:'Libya',currency:'LYD',vatEnabled:false,vatPercent:'0',fxRateToUSD:'0.2',inventoryMode:'stock'};
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${c.id?'Edit':'Add'} City</h3>
+    <div class="form-row"><div class="form-group"><label>Name EN</label><input id="mci-en" value="${c.nameEn}"></div><div class="form-group"><label>Name AR</label><input id="mci-ar" value="${c.nameAr}" dir="rtl"></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Currency</label><input id="mci-cur" value="${c.currency}"></div><div class="form-group"><label>VAT %</label><input id="mci-vat" type="number" value="${c.vatPercent}"></div><div class="form-group"><label>FX to USD</label><input id="mci-fx" type="number" step="0.0001" value="${c.fxRateToUSD}"></div></div>
+    <div class="form-row"><div class="form-group"><label>VAT Enabled</label><select id="mci-ve"><option value="false" ${!c.vatEnabled?'selected':''}>No</option><option value="true" ${c.vatEnabled?'selected':''}>Yes</option></select></div><div class="form-group"><label>Inventory Mode</label><select id="mci-im"><option value="stock" ${c.inventoryMode==='stock'?'selected':''}>Stock</option><option value="quota" ${c.inventoryMode==='quota'?'selected':''}>Quota</option></select></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveCity('${c.id||''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveCity(id) {
+  const data={nameEn:document.getElementById('mci-en').value,nameAr:document.getElementById('mci-ar').value,currency:document.getElementById('mci-cur').value,vatPercent:document.getElementById('mci-vat').value,fxRateToUSD:document.getElementById('mci-fx').value,vatEnabled:document.getElementById('mci-ve').value==='true',inventoryMode:document.getElementById('mci-im').value};
+  if(id) await api('/api/admin/cities/'+id,{method:'PUT',body:data});
+  else await api('/api/admin/cities',{method:'POST',body:data});
+  document.querySelector('.modal-overlay')?.remove();
+  nav('cities');
+}
+
+// ═══════ INIT ═══════
+checkAuth();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+name: Deploy Nyluver Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Server
+        run: npm run server:build
+
+      - name: Deploy Build to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 22
+          source: "server_dist/*,package.json,package-lock.json"
+          target: "~/nyluver-backend"
+
+      - name: Install Dependencies and Restart Application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 22
+          script: |
+            cd ~/nyluver-backend
+            npm install --omit=dev
+            
+            # Sync database schemas
+            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            npx drizzle-kit push
+
+            # Ensure PM2 is installed globally for process management
+            if ! command -v pm2 &> /dev/null; then
+              echo "Installing pm2..."
+              npm install -g pm2
+            fi
+
+            # Start or restart the Node.js application process
+            if pm2 list | grep -q "nyluver-backend"; then
+              pm2 restart nyluver-backend
+            else
+              pm2 start server_dist/index.js --name "nyluver-backend"
+            fi
+            pm2 save
