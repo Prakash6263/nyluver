@@ -11,6 +11,9 @@ import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate,
 const SessionStore = MemoryStore(session);
 
 function generateOtp(): string {
+  // When DEFAULT_OTP is set in .env, use it (for testing/staging).
+  // Remove DEFAULT_OTP from .env when client provides real WhatsApp credentials.
+  if (process.env.DEFAULT_OTP) return process.env.DEFAULT_OTP;
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
@@ -98,11 +101,13 @@ export function registerRoutes(app: Express) {
       }
       const code = generateOtp();
       await storage.createOtp(cleanPhone, code);
-      console.log(`[REGISTRATION] Sending WhatsApp OTP to ${cleanPhone}`);
-      const result = await sendOtp(cleanPhone, code);
-      if (!result.success) {
-        console.log(`[REGISTRATION] OTP code for ${cleanPhone}: ${code}`);
-        return res.status(500).json({ error: 'Failed to send verification code. Please try again.' });
+      console.log(`[REGISTRATION] OTP code for ${cleanPhone}: ${code}`);
+      if (!process.env.DEFAULT_OTP) {
+        // Only attempt WhatsApp when real credentials are configured
+        const result = await sendOtp(cleanPhone, code);
+        if (!result.success) {
+          console.warn(`[REGISTRATION] WhatsApp delivery failed for ${cleanPhone}. Code is in server logs.`);
+        }
       }
       res.json({ success: true, phone: cleanPhone });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -238,11 +243,13 @@ export function registerRoutes(app: Express) {
       }
       const code = generateOtp();
       await storage.createOtp(phone, code);
-      console.log(`[ADMIN] Sending WhatsApp OTP to ${phone}`);
-      const result = await sendOtp(phone, code);
-      if (!result.success) {
-        console.log(`[ADMIN] OTP code for ${phone}: ${code}`);
-        return res.status(500).json({ error: 'Failed to send OTP via WhatsApp. Check server logs for the code.' });
+      console.log(`[ADMIN] OTP code for ${phone}: ${code}`);
+      if (!process.env.DEFAULT_OTP) {
+        // Only attempt WhatsApp when real credentials are configured
+        const result = await sendOtp(phone, code);
+        if (!result.success) {
+          console.warn(`[ADMIN] WhatsApp delivery failed for ${phone}. Code is in server logs.`);
+        }
       }
       res.json({ success: true, message: 'OTP sent' });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -341,7 +348,7 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/products/:id', async (req, res) => {
     try {
-      const product = await storage.getProduct(req.params.id);
+      const product = await storage.getProduct((req.params.id as string));
       if (!product) return res.status(404).json({ error: 'Not found' });
       res.json(product);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -367,11 +374,11 @@ export function registerRoutes(app: Express) {
   // ═══════════════════════════════════════
   app.get('/api/slots/:cityId/:date', async (req, res) => {
     try {
-      const slots = await storage.ensureSlots(req.params.cityId, req.params.date);
-      const blackouts = await storage.getBlackoutDates(req.params.cityId);
-      const isBlackedOut = blackouts.some(b => b.date === req.params.date);
+      const slots = await storage.ensureSlots((req.params.cityId as string), (req.params.date as string));
+      const blackouts = await storage.getBlackoutDates((req.params.cityId as string));
+      const isBlackedOut = blackouts.some(b => b.date === (req.params.date as string));
       const today = new Date().toISOString().split('T')[0];
-      const isToday = req.params.date === today;
+      const isToday = (req.params.date as string) === today;
       const currentHour = new Date().getHours();
       const enrichedSlots = slots.map(slot => {
         const startHour = parseInt(slot.startTime.split(':')[0], 10);
@@ -511,7 +518,7 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/orders/:id', customerAuth, async (req, res) => {
     try {
-      const order = await storage.getOrder(req.params.id);
+      const order = await storage.getOrder((req.params.id as string));
       if (!order) return res.status(404).json({ error: 'Not found' });
       res.json(order);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -587,13 +594,13 @@ export function registerRoutes(app: Express) {
   app.put('/api/admin/products/:id', adminAuth, async (req, res) => {
     try {
       const { images, occasionIds, moodIds, ...data } = req.body;
-      const product = await storage.updateProduct(req.params.id, data, images, occasionIds, moodIds);
+      const product = await storage.updateProduct((req.params.id as string), data, images, occasionIds, moodIds);
       res.json(product);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.delete('/api/admin/products/:id', adminAuth, async (req, res) => {
-    try { await storage.deleteProduct(req.params.id); res.json({ success: true }); }
+    try { await storage.deleteProduct((req.params.id as string)); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -611,12 +618,12 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/categories/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateCategory(req.params.id, req.body)); }
+    try { res.json(await storage.updateCategory((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.delete('/api/admin/categories/:id', adminAuth, async (req, res) => {
-    try { await storage.deleteCategory(req.params.id); res.json({ success: true }); }
+    try { await storage.deleteCategory((req.params.id as string)); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -629,7 +636,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/occasions/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateOccasion(req.params.id, req.body)); }
+    try { res.json(await storage.updateOccasion((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -642,7 +649,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/moods/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateMood(req.params.id, req.body)); }
+    try { res.json(await storage.updateMood((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -660,7 +667,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/add-ons/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateAddOn(req.params.id, req.body)); }
+    try { res.json(await storage.updateAddOn((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -679,7 +686,7 @@ export function registerRoutes(app: Express) {
 
   app.get('/api/admin/orders/:id', adminAuth, async (req, res) => {
     try {
-      const order = await storage.getOrder(req.params.id);
+      const order = await storage.getOrder((req.params.id as string));
       if (!order) return res.status(404).json({ error: 'Not found' });
       res.json(order);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -688,7 +695,7 @@ export function registerRoutes(app: Express) {
   app.put('/api/admin/orders/:id/status', adminAuth, async (req, res) => {
     try {
       const { status, notes } = req.body;
-      const order = await storage.updateOrderStatus(req.params.id, status, notes);
+      const order = await storage.updateOrderStatus((req.params.id as string), status, notes);
 
       if (order && order.recipientPhone) {
         sendStatusUpdate(order.recipientPhone, order.orderNumber, status).catch(e => console.error('[WhatsApp] Status update failed:', e.message));
@@ -700,14 +707,14 @@ export function registerRoutes(app: Express) {
 
   app.post('/api/admin/orders/:id/flag', adminAuth, async (req, res) => {
     try {
-      await storage.flagOrder(req.params.id, req.body.reason);
+      await storage.flagOrder((req.params.id as string), req.body.reason);
       res.json({ success: true });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.post('/api/admin/orders/:id/assign-driver', adminAuth, async (req, res) => {
     try {
-      const result = await storage.assignDriver(req.params.id, req.body.driverId);
+      const result = await storage.assignDriver((req.params.id as string), req.body.driverId);
       res.json(result);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
@@ -726,7 +733,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/drivers/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateDriver(req.params.id, req.body)); }
+    try { res.json(await storage.updateDriver((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -735,18 +742,18 @@ export function registerRoutes(app: Express) {
   // ═══════════════════════════════════════
   app.get('/api/admin/slots/:cityId/:date', adminAuth, async (req, res) => {
     try {
-      const slots = await storage.ensureSlots(req.params.cityId, req.params.date);
+      const slots = await storage.ensureSlots((req.params.cityId as string), (req.params.date as string));
       res.json(slots);
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.put('/api/admin/slots/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateSlotCapacity(req.params.id, req.body.capacity)); }
+    try { res.json(await storage.updateSlotCapacity((req.params.id as string), req.body.capacity)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.get('/api/admin/blackout-dates/:cityId', adminAuth, async (req, res) => {
-    try { res.json(await storage.getBlackoutDates(req.params.cityId)); }
+    try { res.json(await storage.getBlackoutDates((req.params.cityId as string))); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -756,7 +763,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.delete('/api/admin/blackout-dates/:id', adminAuth, async (req, res) => {
-    try { await storage.deleteBlackoutDate(req.params.id); res.json({ success: true }); }
+    try { await storage.deleteBlackoutDate((req.params.id as string)); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -774,7 +781,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/promos/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updatePromoCode(req.params.id, req.body)); }
+    try { res.json(await storage.updatePromoCode((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -805,7 +812,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/whatsapp-templates/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateWhatsappTemplate(req.params.id, req.body)); }
+    try { res.json(await storage.updateWhatsappTemplate((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -854,7 +861,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/subscription-plans/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateSubscriptionPlan(req.params.id, req.body)); }
+    try { res.json(await storage.updateSubscriptionPlan((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -872,12 +879,12 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/banners/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateBanner(req.params.id, req.body)); }
+    try { res.json(await storage.updateBanner((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.delete('/api/admin/banners/:id', adminAuth, async (req, res) => {
-    try { await storage.deleteBanner(req.params.id); res.json({ success: true }); }
+    try { await storage.deleteBanner((req.params.id as string)); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -894,12 +901,12 @@ export function registerRoutes(app: Express) {
   app.put('/api/admin/fraud/:id/resolve', adminAuth, async (req, res) => {
     try {
       const sess = req.session as any;
-      res.json(await storage.resolveFraudFlag(req.params.id, sess.userId));
+      res.json(await storage.resolveFraudFlag((req.params.id as string), sess.userId));
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.post('/api/admin/users/:id/blacklist', adminAuth, async (req, res) => {
-    try { await storage.blacklistUser(req.params.id); res.json({ success: true }); }
+    try { await storage.blacklistUser((req.params.id as string)); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -928,7 +935,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/cities/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateCity(req.params.id, req.body)); }
+    try { res.json(await storage.updateCity((req.params.id as string), req.body)); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -936,12 +943,12 @@ export function registerRoutes(app: Express) {
   // ADMIN: SETTINGS
   // ═══════════════════════════════════════
   app.get('/api/admin/settings/:key', adminAuth, async (req, res) => {
-    try { res.json({ value: await storage.getSetting(req.params.key) }); }
+    try { res.json({ value: await storage.getSetting((req.params.key as string)) }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.put('/api/admin/settings/:key', adminAuth, async (req, res) => {
-    try { await storage.setSetting(req.params.key, req.body.value); res.json({ success: true }); }
+    try { await storage.setSetting((req.params.key as string), req.body.value); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 }

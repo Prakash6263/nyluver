@@ -33,7 +33,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 22
-          source: "server_dist/*,package.json,package-lock.json"
+          source: "server_dist/*,package.json,package-lock.json,server/admin/index.html,server/templates/"
           target: "~/nyluver-backend"
 
       - name: Install Dependencies and Restart Application
@@ -47,21 +47,30 @@ jobs:
           script: |
             cd ~/nyluver-backend
             npm install --omit=dev
-            
-            # Sync database schemas
-            export DATABASE_URL="${{ secrets.DATABASE_URL }}"
+
+            # Write .env file on server with all required variables
+            cat > .env << EOF
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+            PORT=4020
+            NODE_ENV=production
+            EXPO_PUBLIC_DOMAIN=node.aitechnotech.in
+            DEFAULT_OTP=123456
+            EOF
+
+            # Sync database schema (drizzle push)
             npx drizzle-kit push
 
-            # Ensure PM2 is installed globally for process management
+            # Ensure PM2 is installed
             if ! command -v pm2 &> /dev/null; then
-              echo "Installing pm2..."
               npm install -g pm2
             fi
 
-            # Start or restart the Node.js application process
+            # Restart or start the backend
             if pm2 list | grep -q "nyluver-backend"; then
-              pm2 restart nyluver-backend
-            else
-              pm2 start server_dist/index.js --name "nyluver-backend"
+              pm2 delete nyluver-backend
             fi
+            pm2 start server_dist/index.js --name "nyluver-backend" --node-args="--env-file=.env"
+
+            # Save PM2 process list so it survives server reboots
             pm2 save
