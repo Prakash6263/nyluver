@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(parsedUser);
           try {
             const baseUrl = getApiUrl();
-            const res = await fetch(new URL('/api/auth/me', baseUrl).toString(), {
+            const res = await fetch(new URL('api/auth/me', baseUrl).toString(), {
               headers: { 'Authorization': `Bearer ${savedToken}` },
             });
             if (res.ok) {
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, phone: string): Promise<{ error?: string }> => {
     try {
       const baseUrl = getApiUrl();
-      const res = await fetch(new URL('/api/auth/login', baseUrl).toString(), {
+      const res = await fetch(new URL('api/auth/login', baseUrl).toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase(), phone: phone.trim() }),
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendSignUpOtp = useCallback(async (name: string, email: string, phone: string): Promise<{ error?: string; phone?: string; devCode?: string }> => {
     try {
       const baseUrl = getApiUrl();
-      const res = await fetch(new URL('/api/auth/register/send-otp', baseUrl).toString(), {
+      const res = await fetch(new URL('api/auth/register/send-otp', baseUrl).toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), phone: phone.trim() }),
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const verifySignUp = useCallback(async (name: string, email: string, phone: string, code: string): Promise<{ error?: string }> => {
     try {
       const baseUrl = getApiUrl();
-      const res = await fetch(new URL('/api/auth/register/verify', baseUrl).toString(), {
+      const res = await fetch(new URL('api/auth/register/verify', baseUrl).toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), phone: phone.trim(), code: code.trim() }),

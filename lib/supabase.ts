@@ -7,7 +7,7 @@ let initPromise: Promise<SupabaseClient> | null = null;
 
 async function fetchConfig(): Promise<{ url: string; anonKey: string }> {
   const baseUrl = getApiUrl();
-  const res = await fetch(new URL('/api/config/supabase', baseUrl).toString());
+  const res = await fetch(new URL('api/config/supabase', baseUrl).toString());
   if (!res.ok) throw new Error('Failed to fetch Supabase config');
   return res.json();
 }

@@ -144,7 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const token = await AsyncStorage.getItem('nyluver_auth_token');
 
       const baseUrl = getApiUrl();
-      const url = new URL('/api/orders/app', baseUrl).toString();
+      const url = new URL('api/orders/app', baseUrl).toString();
 
       const res = await fetch(url, {
         method: 'POST',
