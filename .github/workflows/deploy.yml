@@ -25,6 +25,9 @@ jobs:
       - name: Build Server
         run: npm run server:build
 
+      - name: Build Web Frontend
+        run: npx expo export --platform web
+
       - name: Deploy Build to Server (SCP)
         uses: appleboy/scp-action@master
         with:
@@ -35,6 +38,17 @@ jobs:
           source: "server_dist/,package.json,package-lock.json,server/admin/index.html,server/templates/"
           target: "~/nyluver-backend"
           strip_components: 0
+
+      - name: Deploy Web Frontend to Server (SCP)
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          source: "dist/**"
+          target: "~/nyluver-backend/nyluver"
+          strip_components: 1
 
       - name: Install Dependencies and Restart Application
         uses: appleboy/ssh-action@master
