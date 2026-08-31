@@ -204,10 +204,22 @@ function renderApp() {
         <a onclick="nav('fraud')" data-page="fraud">&#9888; Fraud</a>
         <a onclick="nav('users')" data-page="users">&#9823; Users</a>
         <a onclick="nav('cities')" data-page="cities">&#9960; Cities</a>
+        <div class="section-label">Account</div>
+        <a onclick="logout()" style="color:rgba(255,100,100,0.85);">&#10006; Logout</a>
       </nav>
     </div>
     <div class="main" id="page-content"></div>`;
   nav('dashboard');
+}
+
+async function logout() {
+  try {
+    await api('/api/auth/logout', { method: 'POST' });
+  } catch (e) {
+    console.error('Logout failed:', e);
+  }
+  currentUser = null;
+  renderLogin();
 }
 
 function nav(page) {
