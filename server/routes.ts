@@ -229,9 +229,30 @@ export function registerRoutes(app: Express) {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/auth/me', appAuth, async (req, res) => {
-    const user = (req as any).appUser;
-    res.json({ id: user.id, name: user.nameEn, email: user.email, phone: user.phone, points: user.loyaltyPoints });
+  app.get('/api/auth/me', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        const userId = tokenStore.get(token);
+        if (!userId) {
+          return res.status(401).json({ error: 'Invalid token' });
+        }
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(401).json({ error: 'User not found' });
+        }
+        return res.json({ id: user.id, name: user.nameEn, email: user.email, phone: user.phone, points: user.loyaltyPoints });
+      }
+
+      // Fallback to session auth (Web Admin Panel)
+      const sess = req.session as any;
+      if (!sess?.userId) return res.json({ user: null });
+      const user = await storage.getUser(sess.userId);
+      res.json({ user });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // ═══════════════════════════════════════
@@ -305,14 +326,7 @@ export function registerRoutes(app: Express) {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.get('/api/auth/me', async (req, res) => {
-    try {
-      const sess = req.session as any;
-      if (!sess?.userId) return res.json({ user: null });
-      const user = await storage.getUser(sess.userId);
-      res.json({ user });
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
-  });
+
 
   app.post('/api/auth/logout', (req, res) => {
     req.session.destroy(() => {
