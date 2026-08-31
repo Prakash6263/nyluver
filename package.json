@@ -31,5 +31,6 @@
     "tweetsodium": "^0.0.4",
     "typescript": "~5.9.2"
   },
+  "type": "module",
   "private": true
 }
