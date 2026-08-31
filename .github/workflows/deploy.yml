@@ -47,15 +47,18 @@ jobs:
             cd ~/nyluver-backend
             npm install --omit=dev
 
-            # Write .env file on server with all required variables
-            cat > .env << 'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
-            PORT=4020
-            NODE_ENV=production
-            EXPO_PUBLIC_DOMAIN=node.aitechnotech.in
-            DEFAULT_OTP=123456
-            ENVEOF
+            # Write core .env vars (preserve any extra vars like WHATSAPP credentials)
+            # Only set vars if they are not already present in .env
+            touch .env
+            grep -q "^DATABASE_URL=" .env    || echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"    >> .env
+            grep -q "^SESSION_SECRET=" .env  || echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+            grep -q "^PORT=" .env            || echo "PORT=4020"                                    >> .env
+            grep -q "^NODE_ENV=" .env        || echo "NODE_ENV=production"                          >> .env
+            grep -q "^DEFAULT_OTP=" .env     || echo "DEFAULT_OTP=123456"                           >> .env
+
+            # Update vars that must be in sync with GitHub secrets
+            sed -i "s|^DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|" .env
+            sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=${{ secrets.SESSION_SECRET }}|" .env
 
             # Sync database schema
             npx drizzle-kit push || true
@@ -65,9 +68,10 @@ jobs:
               npm install -g pm2
             fi
 
-            # Restart backend cleanly
-            pm2 delete nyluver-backend 2>/dev/null || true
-            pm2 start server_dist/index.js --name "nyluver-backend" --node-args="--env-file=.env"
+            # Restart existing PM2 process (preserves env vars from .env file)
+            # If no process exists, start fresh
+            pm2 restart nyluver-backend --update-env 2>/dev/null || \
+              pm2 start server_dist/index.js --name "nyluver-backend" --node-args="--env-file=.env"
 
             # Save PM2 so it survives reboots
             pm2 save
