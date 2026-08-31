@@ -4,11 +4,13 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import pg from "pg";
 import crypto from "crypto";
 import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate, sendWhatsAppMessage } from "./whatsapp";
 
-const SessionStore = MemoryStore(session);
+const PgSession = connectPgSimple(session);
+const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 function generateOtp(): string {
   // When DEFAULT_OTP is set in .env, use it (for testing/staging).
@@ -67,8 +69,17 @@ export function registerRoutes(app: Express) {
     secret: process.env.SESSION_SECRET || 'nyluver-secret-key',
     resave: false,
     saveUninitialized: false,
-    store: new SessionStore({ checkPeriod: 86400000 }),
-    cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 },
+    store: new PgSession({
+      pool: sessionPool,
+      tableName: 'session',
+      createTableIfMissing: true,  // auto-creates session table in PostgreSQL
+    }),
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true,
+      secure: false, // set true if HTTPS is enforced end-to-end
+      sameSite: 'lax',
+    },
   }));
 
   // ═══════════════════════════════════════
