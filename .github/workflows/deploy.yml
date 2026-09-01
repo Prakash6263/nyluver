@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: 22
-          source: "server_dist/,package.json,package-lock.json,server/admin/index.html,server/templates/"
+          source: "server_dist/,package.json,package-lock.json,ecosystem.config.cjs,server/admin/index.html,server/templates/"
           target: "~/nyluver-backend"
           strip_components: 0
 
@@ -69,9 +69,9 @@ jobs:
             fi
 
             # Restart existing PM2 process (preserves env vars from .env file)
-            # If no process exists, start fresh
+            # If no process exists, start fresh via ecosystem config
             pm2 restart nyluver-backend --update-env 2>/dev/null || \
-              pm2 start server_dist/index.js --name "nyluver-backend" --node-args="--env-file=.env"
+              pm2 start ecosystem.config.cjs
 
             # Save PM2 so it survives reboots
             pm2 save

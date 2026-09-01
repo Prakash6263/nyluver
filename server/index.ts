@@ -237,7 +237,19 @@ function setupErrorHandler(app: express.Application) {
   setupErrorHandler(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  app.listen(port, "0.0.0.0", () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     log(`express server serving on port ${port}`);
+  });
+
+  server.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`[SERVER] Port ${port} is currently busy. Retrying in 2 seconds...`);
+      setTimeout(() => {
+        server.close();
+        server.listen(port, "0.0.0.0");
+      }, 2000);
+    } else {
+      console.error("[SERVER ERROR]", err);
+    }
   });
 })();
