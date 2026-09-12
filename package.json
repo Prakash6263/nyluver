@@ -3,9 +3,9 @@
   "main": "server/index.ts",
   "version": "1.0.0",
   "scripts": {
-    "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx --env-file=.env server/index.ts",
     "build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist",
-    "start": "NODE_ENV=production node server_dist/index.js",
+    "start": "cross-env NODE_ENV=production node server_dist/index.js",
     "server:build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist",
     "db:push": "drizzle-kit push"
   },
@@ -28,11 +28,17 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.31.0",
     "tweetsodium": "^0.0.4",
     "typescript": "~5.9.2"
   },
   "type": "module",
+  "imports": {
+    "@shared/*": "./shared/*.js",
+    "@shared/schema": "./shared/schema.ts",
+    "@/*": "./*"
+  },
   "private": true
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nyluver Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #F8F6F3;
@@ -24,16 +24,20 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display:flex; min-height:100vh; }
-.sidebar { width:var(--sidebar-w); background:var(--green); color:#fff; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; z-index:100; }
+.sidebar { width:var(--sidebar-w); background:var(--green); color:#fff; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; z-index:100; display:flex; flex-direction:column; justify-content:space-between; }
 .sidebar-brand { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,.1); }
 .sidebar-brand h1 { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; color:var(--gold); }
 .sidebar-brand span { font-size:11px; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:2px; }
-.sidebar-nav { padding:12px 0; }
+.sidebar-nav { padding:12px 0; flex:1; }
 .sidebar-nav a { display:flex; align-items:center; gap:12px; padding:10px 20px; color:rgba(255,255,255,.7); text-decoration:none; font-size:13px; font-weight:500; transition:all .2s; cursor:pointer; }
 .sidebar-nav a:hover, .sidebar-nav a.active { background:rgba(255,255,255,.1); color:#fff; }
 .sidebar-nav a.active { border-right:3px solid var(--gold); }
 .sidebar-nav .section-label { padding:16px 20px 6px; font-size:10px; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.3); }
-.main { margin-left:var(--sidebar-w); flex:1; padding:24px 32px; }
+.sidebar-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,.1); background:rgba(0,0,0,.15); }
+.main { margin-left:var(--sidebar-w); flex:1; padding:24px 32px; transition:all .2s; }
+.top-header { display:flex; justify-content:space-between; align-items:center; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 20px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,.03); }
+.top-header-title h2 { font-family:'Playfair Display',serif; font-size:20px; font-weight:600; color:var(--green); margin:0; }
+.top-header-title p { font-size:12px; color:var(--text-secondary); margin:2px 0 0 0; }
 .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
 .page-header h2 { font-family:'Playfair Display',serif; font-size:24px; font-weight:600; }
 .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border:none; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; }
@@ -73,9 +77,9 @@ tr:hover td { background:#FAFAF8; }
 .modal h3 { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:16px; }
 .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
 .login-container { display:flex; align-items:center; justify-content:center; min-height:100vh; width:100%; }
-.login-card { background:#fff; border-radius:16px; padding:40px; width:360px; text-align:center; border:1px solid var(--border); }
+.login-card { background:#fff; border-radius:16px; padding:40px; width:380px; text-align:center; border:1px solid var(--border); box-shadow:0 4px 12px rgba(0,0,0,.05); }
 .login-card h1 { font-family:'Playfair Display',serif; color:var(--green); margin-bottom:6px; }
-.login-card .subtitle { color:var(--text-secondary); font-size:13px; margin-bottom:24px; }
+.login-card .subtitle { color:var(--text-secondary); font-size:13px; margin-bottom:20px; }
 .tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--bg); border-radius:10px; padding:4px; }
 .tab { flex:1; padding:8px; text-align:center; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; transition:all .2s; color:var(--text-secondary); }
 .tab.active { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
@@ -100,27 +104,33 @@ tr:hover td { background:#FAFAF8; }
 @media(max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .form-row,.form-row-3 { grid-template-columns:1fr; } }
 
 /* ── Language switcher (EN / AR) ───────────────────────── */
-.lang-switch { display:inline-flex; gap:4px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:3px; }
-.lang-switch .lang-btn { background:transparent; border:0; color:rgba(255,255,255,.7); font-size:12px; font-family:inherit; padding:4px 10px; border-radius:6px; cursor:pointer; transition:all .2s; }
-.lang-switch .lang-btn.active { background:var(--gold); color:#1B3A2D; font-weight:600; }
-.sidebar-lang { padding:12px 20px 4px; }
-.login-card .lang-switch { background:var(--bg); border-color:var(--border); margin-bottom:18px; }
-.login-card .lang-switch .lang-btn { color:var(--text-secondary); }
-.login-card .lang-switch .lang-btn.active { background:var(--green); color:#fff; }
+.lang-switch { display:inline-flex; align-items:center; gap:3px; background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:3px 6px; }
+.lang-switch .lang-btn { background:transparent; border:0; color:var(--text-secondary); font-size:12px; font-weight:500; font-family:inherit; padding:4px 10px; border-radius:14px; cursor:pointer; transition:all .2s; }
+.lang-switch .lang-btn:hover { color:var(--text); }
+.lang-switch .lang-btn.active { background:var(--green); color:#fff; font-weight:600; }
+.sidebar-footer .lang-switch { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.15); width:100%; justify-content:center; }
+.sidebar-footer .lang-switch .lang-btn { color:rgba(255,255,255,.7); width:50%; text-align:center; }
+.sidebar-footer .lang-switch .lang-btn.active { background:var(--gold); color:var(--green); }
+.login-card .lang-switch { background:var(--bg); border-color:var(--border); display:inline-flex; margin-bottom:20px; }
 
 /* ── Arabic (RTL) ──────────────────────────────────────── */
-html[dir="rtl"] body { font-family:Tahoma,'Segoe UI','Noto Sans Arabic',sans-serif; }
+html[dir="rtl"] body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
 html[dir="rtl"] .sidebar { left:auto; right:0; }
 html[dir="rtl"] .main { margin-left:0; margin-right:var(--sidebar-w); }
 html[dir="rtl"] .sidebar-nav a.active { border-right:0; border-left:3px solid var(--gold); }
-html[dir="rtl"] th { text-align:right; }
+html[dir="rtl"] th, html[dir="rtl"] td { text-align:right; }
+html[dir="rtl"] .modal-actions { justify-content:flex-start; }
 html[dir="rtl"] .toggle::after { left:auto; right:2px; }
 html[dir="rtl"] .toggle.active::after { left:auto; right:20px; }
 html[dir="rtl"] .sidebar-brand h1,
+html[dir="rtl"] .top-header-title h2,
 html[dir="rtl"] .page-header h2,
 html[dir="rtl"] .modal h3,
 html[dir="rtl"] .login-card h1,
-html[dir="rtl"] .stat-card .value { font-family:Tahoma,'Segoe UI','Noto Sans Arabic',serif; }
+html[dir="rtl"] .stat-card .value { font-family: 'Cairo', serif; }
+html[dir="rtl"] .form-group input, 
+html[dir="rtl"] .form-group textarea, 
+html[dir="rtl"] .form-group select { font-family: 'Cairo', sans-serif; }
 @media(max-width:768px) { html[dir="rtl"] .main { margin-right:0; } }
 </style>
 </head>
@@ -134,11 +144,12 @@ let currentPage = 'dashboard';
 let pageData = {};
 
 // ═══════ LOCALIZATION (EN / AR) ═══════
-// The UI templates stay in English; every visible string is translated at
-// render time from this dictionary. Keys are the English source strings.
-const LANG_KEY = 'nyluver-admin-lang';
+const LANG_KEY = 'nyluver-lang';
 let LANG = 'en';
-try { LANG = localStorage.getItem(LANG_KEY) === 'ar' ? 'ar' : 'en'; } catch (e) {}
+try { 
+  const saved = localStorage.getItem(LANG_KEY) || localStorage.getItem('nyluver-admin-lang');
+  LANG = saved === 'ar' ? 'ar' : 'en'; 
+} catch (e) {}
 
 const AR = {
   'Catalog': 'الكتالوج',
@@ -347,15 +358,33 @@ const AR = {
   'Add Template': 'إضافة قالب',
   'Edit City': 'تعديل مدينة',
   'Add City': 'إضافة مدينة',
+  'pending_payment': 'بانتظار الدفع',
   'pending payment': 'بانتظار الدفع',
+  'awaiting_recipient': 'بانتظار تأكيد المستلم',
   'awaiting recipient': 'بانتظار تأكيد المستلم',
   'accepted': 'مقبول',
+  'in_prep': 'قيد التحضير',
   'in prep': 'قيد التحضير',
   'ready': 'جاهز',
+  'out_for_delivery': 'قيد التوصيل',
   'out for delivery': 'قيد التوصيل',
   'delivered': 'تم التوصيل',
-  'failed delivery': 'فشل التوصيل',
+  'failed_delivery': 'فشل التوصيل',
   'cancelled': 'ملغي',
+  'declined': 'مرفوض',
+  'rescheduled': 'إعادة جدولة',
+  'active': 'نشط',
+  'inactive': 'غير نشط',
+  'busy': 'مشغول',
+  'available': 'متاح',
+  'admin': 'مشرف',
+  'customer': 'عميل',
+  'percentage': 'نسبة مئوية',
+  'fixed': 'مبلغ ثابت',
+  'weekly': 'أسبوعي',
+  'monthly': 'شهري',
+  'stock': 'مخزون',
+  'quota': 'حصة',
   'No phone number available': 'لا يوجد رقم هاتف متاح',
   'Driver updated': 'تم تحديث السائق',
   'Driver added': 'تمت إضافة السائق',
@@ -369,22 +398,66 @@ const AR = {
   'Blacklist user?': 'حظر المستخدم؟',
   'This user will be blocked from the app.': 'سيتم حظر هذا المستخدم من التطبيق.',
   'User blacklisted': 'تم حظر المستخدم',
+  'English': 'English',
+  'Arabic': 'العربية',
+  'Welcome back': 'مرحباً بك مجدداً',
+  'Welcome back,': 'مرحباً بك،',
+  'Search...': 'بحث...',
+  'No reason': 'بدون سبب',
+  'Stock': 'المخزون',
+  'Manual': 'يدوي',
+  'sent': 'تم الإرسال',
+  'Error': 'خطأ',
+  'Send failed': 'فشل الإرسال',
+  'Sending...': 'جارٍ الإرسال...',
+  'Sent!': 'تم الإرسال!',
+  'Failed': 'فشل',
 };
 
-// Translate a single UI string (identity when the language is English).
-function t(key) {
-  if (LANG !== 'ar' || key === undefined || key === null) return key;
-  return Object.prototype.hasOwnProperty.call(AR, key) ? AR[key] : key;
+// Get multilingual value from object based on active LANG
+function getLangField(obj, fieldName = 'name') {
+  if (!obj) return '';
+  if (LANG === 'ar') {
+    return obj[fieldName + 'Ar'] || obj[fieldName + 'En'] || obj[fieldName] || '';
+  }
+  return obj[fieldName + 'En'] || obj[fieldName + 'Ar'] || obj[fieldName] || '';
 }
 
-// Translate one text chunk, keeping surrounding whitespace and any leading
-// HTML entity (the sidebar icons are entities, e.g. "&#9632; Dashboard").
+// Render primary language with secondary language subtext
+function renderBilingualText(obj, mainField = 'name') {
+  if (!obj) return '';
+  const primary = getLangField(obj, mainField);
+  const secondaryField = LANG === 'ar' ? mainField + 'En' : mainField + 'Ar';
+  const secondary = obj[secondaryField];
+  if (secondary && secondary !== primary) {
+    return `<strong>${primary}</strong><br><small style="color:var(--text-secondary)">${secondary}</small>`;
+  }
+  return `<strong>${primary}</strong>`;
+}
+
+// Translate a single UI string (identity when language is English)
+function t(key) {
+  if (LANG !== 'ar' || key === undefined || key === null) return key;
+  const str = String(key).trim();
+  if (AR[str]) return AR[str];
+  const formatted = str.replace(/_/g, ' ');
+  if (AR[formatted]) return AR[formatted];
+  return key;
+}
+
+// Translate text node in DOM, preserving any icon/symbol prefix or suffix
 function translateText(text) {
   if (LANG !== 'ar' || typeof text !== 'string' || !text) return text;
-  const m = text.match(/^(\s*(?:&#?\w+;\s*)*)([\s\S]*?)(\s*)$/);
+  if (AR[text]) return AR[text];
+  const m = text.match(/^([^a-zA-Z0-9\u0600-\u06FF]*)([\s\S]*?)([^a-zA-Z0-9\u0600-\u06FF]*)$/);
   if (!m) return text;
-  const ar = AR[m[2]];
-  return ar ? m[1] + ar + m[3] : text;
+  const prefix = m[1];
+  const core = m[2].trim();
+  const suffix = m[3];
+  if (AR[core]) {
+    return prefix + AR[core] + suffix;
+  }
+  return text;
 }
 
 // Walk a subtree and translate its text nodes + placeholders in place.
@@ -459,10 +532,17 @@ function langSwitcherHtml() {
 function setLang(lang) {
   if (lang !== 'en' && lang !== 'ar') return;
   LANG = lang;
-  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  try {
+    localStorage.setItem(LANG_KEY, lang);
+    localStorage.setItem('nyluver-admin-lang', lang);
+  } catch (e) {}
   applyLangAttrs();
   if (currentUser) renderApp(); else renderLogin();
 }
+
+// Ensure language attributes and translation observer run on initial load
+applyLangAttrs();
+observeTranslations();
 
 function showToast(message, icon = 'success') {
   Swal.fire({ toast: true, position: LANG === 'ar' ? 'top-start' : 'top-end', icon, title: t(message), showConfirmButton: false, timer: 2500, timerProgressBar: true, dir: LANG === 'ar' ? 'rtl' : 'ltr' });
@@ -500,6 +580,9 @@ function renderLogin() {
   app.innerHTML = `
     <div class="login-container">
       <div class="login-card">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+          ${langSwitcherHtml()}
+        </div>
         <h1>Nyluver</h1>
         <p class="subtitle">Admin Dashboard</p>
         <div id="login-form">
@@ -572,8 +655,21 @@ function renderApp() {
         <div class="section-label">Account</div>
         <a onclick="logout()" style="color:rgba(255,100,100,0.85);">&#10006; Logout</a>
       </nav>
+      <div class="sidebar-footer">
+        ${langSwitcherHtml()}
+      </div>
     </div>
-    <div class="main" id="page-content"></div>`;
+    <div class="main">
+      <div class="top-header">
+        <div class="top-header-title">
+          <h2>Nyluver <small style="font-size:13px;color:var(--text-secondary);font-weight:normal;">— Admin Dashboard</small></h2>
+        </div>
+        <div>
+          ${langSwitcherHtml()}
+        </div>
+      </div>
+      <div id="page-content"></div>
+    </div>`;
   nav('dashboard');
 }
 
@@ -625,7 +721,7 @@ async function renderDashboard(el) {
   const statusMap = {};
   (d.statusBreakdown || []).forEach(s => statusMap[s.status] = s.count);
   el.innerHTML = `
-    <div class="page-header"><h2>Dashboard</h2><span style="color:var(--text-secondary);font-size:13px">Welcome back, ${currentUser.nameEn || 'Admin'}</span></div>
+    <div class="page-header"><h2>Dashboard</h2><span style="color:var(--text-secondary);font-size:13px">Welcome back, ${getLangField(currentUser, 'name') || 'Admin'}</span></div>
     <div class="stats-grid">
       <div class="stat-card"><div class="label">Total Orders</div><div class="value">${d.totalOrders}</div></div>
       <div class="stat-card"><div class="label">Products</div><div class="value">${d.totalProducts}</div></div>
@@ -636,7 +732,7 @@ async function renderDashboard(el) {
       <h3 style="font-family:'Playfair Display',serif;margin-bottom:12px">Orders by Status</h3>
       <div style="display:flex;flex-wrap:wrap;gap:12px">
         ${['pending_payment','paid','awaiting_recipient','accepted','in_prep','ready','out_for_delivery','delivered','failed_delivery','cancelled'].map(s =>
-          `<div style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);font-size:13px"><span style="font-weight:600">${statusMap[s]||0}</span> <span style="color:var(--text-secondary)">${s.replace(/_/g,' ')}</span></div>`
+          `<div style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);font-size:13px"><span style="font-weight:600">${statusMap[s]||0}</span> <span style="color:var(--text-secondary)">${t(s)}</span></div>`
         ).join('')}
       </div>
     </div>`;
@@ -647,7 +743,7 @@ async function renderProducts(el) {
   const products = await api('/api/admin/products');
   const cats = await api('/api/admin/categories');
   const catMap = {};
-  cats.forEach(c => catMap[c.id] = c.nameEn);
+  cats.forEach(c => catMap[c.id] = getLangField(c, 'name'));
   el.innerHTML = `
     <div class="page-header"><h2>Products</h2><button class="btn btn-primary" onclick="showProductModal()">+ Add Product</button></div>
     <div class="card" style="overflow-x:auto">
@@ -655,7 +751,7 @@ async function renderProducts(el) {
         <thead><tr><th>Product</th><th>Category</th><th>Price (LYD)</th><th>Price (USD)</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>${products.map(p => `
           <tr>
-            <td><strong>${p.nameEn}</strong><br><small style="color:var(--text-secondary)">${p.nameAr}</small></td>
+            <td>${renderBilingualText(p, 'name')}</td>
             <td>${catMap[p.categoryId] || '-'}</td>
             <td>${p.priceLYD}</td>
             <td>$${p.priceUSD}</td>
@@ -693,7 +789,7 @@ async function showProductModal(id) {
       <div class="form-row-3">
         <div class="form-group"><label>Price LYD</label><input id="mp-priceLYD" type="number" value="${product.priceLYD}"></div>
         <div class="form-group"><label>Price USD</label><input id="mp-priceUSD" type="number" value="${product.priceUSD}"></div>
-        <div class="form-group"><label>Category</label><select id="mp-cat">${cats.map(c=>`<option value="${c.id}" ${c.id===product.categoryId?'selected':''}>${c.nameEn}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Category</label><select id="mp-cat">${cats.map(c=>`<option value="${c.id}" ${c.id===product.categoryId?'selected':''}>${getLangField(c, 'name')}</option>`).join('')}</select></div>
       </div>
       <div class="form-row-3">
         <div class="form-group"><label>Stock Count</label><input id="mp-stock" type="number" value="${product.stockCount||0}"></div>
@@ -873,7 +969,7 @@ async function renderOrders(el) {
         <td><strong>${o.orderNumber}</strong></td>
         <td>${o.recipientName}<br><small style="color:var(--text-secondary)">${o.recipientPhone}</small></td>
         <td>${o.total} LYD</td>
-        <td><span class="badge badge-${statusColors[o.status]||'gray'}">${o.status.replace(/_/g,' ')}</span></td>
+        <td><span class="badge badge-${statusColors[o.status]||'gray'}">${t(o.status)}</span></td>
         <td>${new Date(o.createdAt).toLocaleDateString()}</td>
         <td>${o.isFlagged?'<span class="badge badge-red">Flagged</span>':'-'}</td>
         <td><button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')">View</button> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${o.id}/receipt','_blank')">Receipt</button></td>
@@ -882,7 +978,7 @@ async function renderOrders(el) {
 }
 
 function filterOrders(status) {
-  document.querySelectorAll('#order-tabs .tab').forEach((t,i) => t.classList.toggle('active', (status===''&&i===0)||(t.textContent.toLowerCase().includes(status.replace(/_/g,' ')))));
+  document.querySelectorAll('#order-tabs .tab').forEach((tEl,i) => tEl.classList.toggle('active', (status===''&&i===0)||(tEl.textContent.toLowerCase().includes(status.replace(/_/g,' ')))));
   document.querySelectorAll('#orders-tbody tr').forEach(tr => {
     tr.style.display = !status || tr.dataset.status === status ? '' : 'none';
   });
@@ -897,21 +993,21 @@ async function showOrderDetail(id) {
   modal.className = 'modal-overlay';
   modal.onclick = e => { if(e.target===modal)modal.remove(); };
   modal.innerHTML = `<div class="modal" style="max-width:700px">
-    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><div><span class="badge badge-blue">${order.status.replace(/_/g,' ')}</span> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${order.id}/receipt','_blank')">Receipt</button></div></div>
+    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><div><span class="badge badge-blue">${t(order.status)}</span> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${order.id}/receipt','_blank')">Receipt</button></div></div>
     <div style="margin:16px 0;padding:16px;background:var(--bg);border-radius:8px">
       <div class="form-row">
         <div><strong>Recipient:</strong> ${order.recipientName}<br>${order.recipientPhone}</div>
-        <div><strong>Sender:</strong> ${order.sender?.nameEn||'N/A'}<br>${order.sender?.phone||'N/A'}</div>
+        <div><strong>Sender:</strong> ${getLangField(order.sender, 'name') || 'N/A'}<br>${order.sender?.phone||'N/A'}</div>
       </div>
       <div style="margin-top:8px"><strong>Address:</strong> ${order.address||'N/A'} &nbsp; <strong>Slot:</strong> ${order.slotDate||'N/A'} ${order.slotTime||''}</div>
       ${order.cardMessage?`<div style="margin-top:8px"><strong>Card Message:</strong> <em>"${order.cardMessage}"</em></div>`:''}
     </div>
     <table style="margin-bottom:16px"><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
-    <tbody>${(order.items||[]).map(i=>`<tr><td>${i.productNameEn}<br><small>${i.productNameAr}</small>${(i.addOns||[]).map(a=>`<br><span class="tag">${a.nameEn}</span>`).join('')}</td><td>${i.quantity}</td><td>${i.unitPrice} LYD</td></tr>`).join('')}
+    <tbody>${(order.items||[]).map(i=>`<tr><td>${renderBilingualText(i, 'productName')}${(i.addOns||[]).map(a=>`<br><span class="tag">${getLangField(a, 'name')}</span>`).join('')}</td><td>${i.quantity}</td><td>${i.unitPrice} LYD</td></tr>`).join('')}
     <tr style="font-weight:600"><td colspan="2">Total</td><td>${order.total} LYD</td></tr></tbody></table>
     <div class="form-row">
       <div class="form-group"><label>Update Status</label>
-        <select id="od-status">${statuses.map(s=>`<option value="${s}" ${s===order.status?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}</select>
+        <select id="od-status">${statuses.map(s=>`<option value="${s}" ${s===order.status?'selected':''}>${t(s)}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label>Assign Driver</label>
         <select id="od-driver"><option value="">-- Select --</option>${drivers.map(d=>`<option value="${d.id}" ${d.id===order.driverId?'selected':''}>${d.name}</option>`).join('')}</select>
@@ -972,9 +1068,10 @@ async function logWhatsApp(orderId) {
 
 // ═══════ DRIVERS ═══════
 function driverBadge(d) {
-  if (d.status === 'busy') return '<span class="badge badge-amber">Busy</span>';
-  if (d.status === 'inactive' || d.isActive === false) return '<span class="badge badge-gray">Inactive</span>';
-  return '<span class="badge badge-green">Active</span>';
+  const statusLabel = t(d.status || (d.isActive ? 'active' : 'inactive'));
+  if (d.status === 'busy') return `<span class="badge badge-amber">${statusLabel}</span>`;
+  if (d.status === 'inactive' || d.isActive === false) return `<span class="badge badge-gray">${statusLabel}</span>`;
+  return `<span class="badge badge-green">${statusLabel}</span>`;
 }
 
 async function renderDrivers(el) {
@@ -1030,7 +1127,7 @@ async function renderSlots(el) {
   el.innerHTML = `<div class="page-header"><h2>Delivery Slots</h2></div>
     <div class="card">
       <div class="form-row">
-        <div class="form-group"><label>City</label><select id="slot-city">${cities.map(c=>`<option value="${c.id}">${c.nameEn}</option>`).join('')}</select></div>
+        <div class="form-group"><label>City</label><select id="slot-city">${cities.map(c=>`<option value="${c.id}">${getLangField(c, 'name')}</option>`).join('')}</select></div>
         <div class="form-group"><label>Date</label><input id="slot-date" type="date" value="${today}"></div>
       </div>
       <button class="btn btn-primary" onclick="loadSlots()">Load Slots</button>
@@ -1085,7 +1182,7 @@ async function renderPromos(el) {
   const promos = await api('/api/admin/promos');
   el.innerHTML = `<div class="page-header"><h2>Promo Codes</h2><button class="btn btn-primary" onclick="showPromoModal()">+ Add Code</button></div>
     <div class="card"><table><thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Used</th><th>Max</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${promos.map(p=>`<tr><td><code style="font-weight:600">${p.code}</code></td><td>${p.type}</td><td>${p.value}${p.type==='percentage'?'%':' LYD'}</td><td>${p.usedCount}</td><td>${p.maxUses||'∞'}</td>
+    <tbody>${promos.map(p=>`<tr><td><code style="font-weight:600">${p.code}</code></td><td>${t(p.type)}</td><td>${p.value}${p.type==='percentage'?'%':' LYD'}</td><td>${p.usedCount}</td><td>${p.maxUses||'∞'}</td>
       <td>${p.isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
       <td><button class="btn btn-outline btn-sm" onclick='showPromoModal(${JSON.stringify(p)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
 }
@@ -1120,7 +1217,7 @@ async function renderBanners(el) {
   el.innerHTML = `<div class="page-header"><h2>Banners</h2><button class="btn btn-primary" onclick="showBannerModal()">+ Add Banner</button></div>
     <div class="card">${banners.map(b=>`<div style="display:flex;gap:12px;align-items:center;padding:12px;border-bottom:1px solid var(--border)">
       <img src="${b.imageUrl}" style="width:120px;height:60px;border-radius:8px;object-fit:cover">
-      <div style="flex:1"><strong>${b.titleEn||'Untitled'}</strong><br><small style="color:var(--text-secondary)">${b.subtitleEn||''}</small></div>
+      <div style="flex:1"><strong>${getLangField(b, 'title') || 'Untitled'}</strong><br><small style="color:var(--text-secondary)">${getLangField(b, 'subtitle')}</small></div>
       <span class="badge badge-${b.isActive?'green':'gray'}">${b.isActive?'Active':'Inactive'}</span>
       <button class="btn btn-outline btn-sm" onclick='showBannerModal(${JSON.stringify(b)})'>Edit</button>
       <button class="btn btn-danger btn-sm" onclick="deleteBanner('${b.id}')">Del</button>
@@ -1190,7 +1287,7 @@ async function renderSubscriptions(el) {
   const plans = await api('/api/admin/subscription-plans');
   el.innerHTML = `<div class="page-header"><h2>Subscription Plans</h2><button class="btn btn-primary" onclick="showSubPlanModal()">+ Add Plan</button></div>
     <div class="card"><table><thead><tr><th>Name EN</th><th>Name AR</th><th>Frequency</th><th>LYD</th><th>USD</th><th>Actions</th></tr></thead>
-    <tbody>${plans.map(p=>`<tr><td>${p.nameEn}</td><td>${p.nameAr}</td><td><span class="badge badge-blue">${p.frequency}</span></td><td>${p.priceLYD}</td><td>$${p.priceUSD}</td>
+    <tbody>${plans.map(p=>`<tr><td>${renderBilingualText(p, 'name')}</td><td>${p.nameAr}</td><td><span class="badge badge-blue">${t(p.frequency)}</span></td><td>${p.priceLYD}</td><td>$${p.priceUSD}</td>
       <td><button class="btn btn-outline btn-sm" onclick='showSubPlanModal(${JSON.stringify(p)})'>Edit</button></td></tr>`).join('')}</tbody></table>
     ${plans.length===0?'<div class="empty-state"><p>No subscription plans yet</p></div>':''}</div>`;
 }
@@ -1222,10 +1319,9 @@ async function renderWhatsApp(el) {
   const templates = await api('/api/admin/whatsapp-templates');
   el.innerHTML = `<div class="page-header"><h2>WhatsApp Templates</h2><button class="btn btn-primary" onclick="showWAModal()">+ Add Template</button></div>
     <div class="card">${templates.map(t=>`<div style="padding:16px;border-bottom:1px solid var(--border)">
-      <div class="flex-between"><strong>${t.nameEn}</strong> / <span style="color:var(--text-secondary)">${t.nameAr}</span>
+      <div class="flex-between"><strong>${getLangField(t, 'name')}</strong>
         <button class="btn btn-outline btn-sm" onclick='showWAModal(${JSON.stringify(t)})'>Edit</button></div>
-      <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:13px">${t.bodyEn}</div>
-      <div style="margin-top:4px;padding:10px;background:var(--bg);border-radius:6px;font-size:13px" dir="rtl">${t.bodyAr}</div>
+      <div style="margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;font-size:13px">${getLangField(t, 'body')}</div>
       ${(t.placeholders||[]).length?`<div style="margin-top:6px">${t.placeholders.map(p=>`<span class="tag">{${p}}</span>`).join('')}</div>`:''}
     </div>`).join('')}${templates.length===0?'<div class="empty-state"><p>No templates</p></div>':''}</div>`;
 }
@@ -1287,8 +1383,8 @@ async function renderUsers(el) {
   el.innerHTML = `<div class="page-header"><h2>Users</h2></div>
     <div class="card" style="overflow-x:auto"><table><thead><tr><th>Phone</th><th>Name</th><th>Role</th><th>Points</th><th>Blacklisted</th><th>Joined</th><th>Actions</th></tr></thead>
     <tbody>${users.map(u=>`<tr>
-      <td>${u.phone}</td><td>${u.nameEn||u.nameAr||'-'}</td>
-      <td><span class="badge badge-${u.role==='admin'?'amber':'blue'}">${u.role}</span></td>
+      <td>${u.phone}</td><td>${getLangField(u, 'name') || '-'}</td>
+      <td><span class="badge badge-${u.role==='admin'?'amber':'blue'}">${t(u.role)}</span></td>
       <td>${u.loyaltyPoints}</td>
       <td>${u.isBlacklisted?'<span class="badge badge-red">Yes</span>':'-'}</td>
       <td>${new Date(u.createdAt).toLocaleDateString()}</td>
