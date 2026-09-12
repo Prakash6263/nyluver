@@ -3,13 +3,14 @@ import { Client } from 'ssh2';
 const conn = new Client();
 
 conn.on('ready', () => {
-  console.log('Connected! Checking index.html and files on remote server...');
+  console.log('Connected! Restarting nyluver-backend process on server...');
   
   const cmd = [
-    'echo "=== nyluver index.html ==="',
-    'cat /home/nodeteam/nyluver-backend/nyluver/index.html',
-    'echo "=== js files ==="',
-    'ls -la /home/nodeteam/nyluver-backend/nyluver/_expo/static/js/web',
+    'cd /home/nodeteam/nyluver-backend',
+    'pm2 restart nyluver-backend --update-env || pm2 start ecosystem.config.cjs',
+    'sleep 3',
+    'pm2 status',
+    'ss -tlnp | grep 4020 || echo "Not Listening"',
   ].join(' && ');
 
   conn.exec(cmd, (err, stream) => {

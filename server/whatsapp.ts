@@ -1,5 +1,9 @@
 const GRAPH_API_URL = 'https://graph.facebook.com/v21.0';
 
+export function isWhatsAppConfigured(): boolean {
+  return !!(process.env.WHATSAPP_PHONE_ID && process.env.WHATSAPP_ACCESS_TOKEN);
+}
+
 function getConfig() {
   const phoneId = process.env.WHATSAPP_PHONE_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -15,7 +19,11 @@ function formatPhone(phone: string): string {
   return clean;
 }
 
-export async function sendWhatsAppMessage(to: string, body: string): Promise<{ success: boolean; messageId?: string }> {
+export async function sendWhatsAppMessage(to: string, body: string): Promise<{ success: boolean; messageId?: string; notConfigured?: boolean; code?: number; message?: string }> {
+  if (!isWhatsAppConfigured()) {
+    console.warn('[WhatsApp] Credentials not configured — message not sent');
+    return { success: false, notConfigured: true };
+  }
   try {
     const { phoneId, accessToken } = getConfig();
     const formattedPhone = formatPhone(to);
@@ -38,8 +46,10 @@ export async function sendWhatsAppMessage(to: string, body: string): Promise<{ s
     const data = await response.json() as any;
 
     if (!response.ok) {
+      const code = data?.error?.code as number | undefined;
+      const message = data?.error?.message as string | undefined;
       console.error(`[WhatsApp ERROR] Failed to send to ${formattedPhone}:`, JSON.stringify(data));
-      return { success: false };
+      return { success: false, code, message };
     }
 
     const messageId = data.messages?.[0]?.id;

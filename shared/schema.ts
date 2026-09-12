@@ -269,6 +269,7 @@ export const drivers = pgTable("drivers", {
   phone: text("phone").notNull(),
   cityId: varchar("city_id").references(() => cities.id),
   isActive: boolean("is_active").notNull().default(true),
+  status: text("status").notNull().default('active'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

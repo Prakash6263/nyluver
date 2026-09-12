@@ -310,8 +310,16 @@ export const storage = {
     return { ...order, items: itemsWithAddOns, whatsappLogs: waLogs, deliveryAssignment: assignment[0] || null, sender: sender || null };
   },
   async createOrder(data: any, items: any[]) {
-    const orderNum = 'NYL-' + Date.now().toString(36).toUpperCase();
-    const [order] = await db.insert(s.orders).values({ ...data, orderNumber: orderNum }).returning();
+    let order: any;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const orderNum = await this.generateOrderNumber();
+        [order] = await db.insert(s.orders).values({ ...data, orderNumber: orderNum }).returning();
+        break;
+      } catch (e: any) {
+        if (attempt === 2 || e?.code !== '23505') throw e;
+      }
+    }
     for (const item of items) {
       const [oi] = await db.insert(s.orderItems).values({
         orderId: order.id,
@@ -333,6 +341,20 @@ export const storage = {
       }
     }
     return order;
+  },
+  async generateOrderNumber() {
+    const now = new Date();
+    const yymmdd = now.getFullYear().toString().slice(2)
+      + String(now.getMonth() + 1).padStart(2, '0')
+      + String(now.getDate()).padStart(2, '0');
+    const [row] = await db.select({ count: sql<number>`count(*)::int` })
+      .from(s.orders)
+      .where(sql`to_char(created_at, 'YYYY-MM-DD') = to_char(now(), 'YYYY-MM-DD')`);
+    return `NYL-${yymmdd}-${String((row?.count || 0) + 1).padStart(4, '0')}`;
+  },
+  async getUserOrderCount(userId: string) {
+    const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(s.orders).where(eq(s.orders.userId, userId));
+    return row?.count || 0;
   },
   async updateOrderStatus(id: string, status: string, notes?: string) {
     const updateData: any = { status, updatedAt: new Date() };
@@ -381,6 +403,10 @@ export const storage = {
     const [driver] = await db.update(s.drivers).set(data).where(eq(s.drivers.id, id)).returning();
     return driver;
   },
+  async deleteDriver(id: string) {
+    const [driver] = await db.update(s.drivers).set({ isActive: false }).where(eq(s.drivers.id, id)).returning();
+    return driver;
+  },
   async assignDriver(orderId: string, driverId: string) {
     await db.update(s.orders).set({ driverId, status: 'out_for_delivery', updatedAt: new Date() }).where(eq(s.orders.id, orderId));
     const [assignment] = await db.insert(s.deliveryAssignments).values({ orderId, driverId }).returning();
@@ -394,6 +420,10 @@ export const storage = {
   // ───── WHATSAPP ─────
   async getWhatsappTemplates() {
     return db.select().from(s.whatsappTemplates).where(eq(s.whatsappTemplates.isActive, true));
+  },
+  async getWhatsappTemplateById(id: string) {
+    const [t] = await db.select().from(s.whatsappTemplates).where(eq(s.whatsappTemplates.id, id));
+    return t;
   },
   async createWhatsappTemplate(data: any) {
     const [t] = await db.insert(s.whatsappTemplates).values(data).returning();
@@ -440,11 +470,15 @@ export const storage = {
     return promo;
   },
   async createPromoCode(data: any) {
-    const [promo] = await db.insert(s.promoCodes).values({ ...data, code: data.code.toUpperCase() }).returning();
+    const promoData = { ...data, code: data.code.toUpperCase() };
+    if (promoData.expiresAt && typeof promoData.expiresAt === 'string') promoData.expiresAt = new Date(promoData.expiresAt);
+    const [promo] = await db.insert(s.promoCodes).values(promoData).returning();
     return promo;
   },
   async updatePromoCode(id: string, data: any) {
-    const [promo] = await db.update(s.promoCodes).set(data).where(eq(s.promoCodes.id, id)).returning();
+    const promoData = { ...data };
+    if (promoData.expiresAt && typeof promoData.expiresAt === 'string') promoData.expiresAt = new Date(promoData.expiresAt);
+    const [promo] = await db.update(s.promoCodes).set(promoData).where(eq(s.promoCodes.id, id)).returning();
     return promo;
   },
   async incrementPromoUsed(id: string) {

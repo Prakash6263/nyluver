@@ -98,15 +98,380 @@ tr:hover td { background:#FAFAF8; }
 .chip { padding:4px 10px; border-radius:20px; font-size:12px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
 .chip.selected { background:var(--green); color:#fff; border-color:var(--green); }
 @media(max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .form-row,.form-row-3 { grid-template-columns:1fr; } }
+
+/* ── Language switcher (EN / AR) ───────────────────────── */
+.lang-switch { display:inline-flex; gap:4px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:3px; }
+.lang-switch .lang-btn { background:transparent; border:0; color:rgba(255,255,255,.7); font-size:12px; font-family:inherit; padding:4px 10px; border-radius:6px; cursor:pointer; transition:all .2s; }
+.lang-switch .lang-btn.active { background:var(--gold); color:#1B3A2D; font-weight:600; }
+.sidebar-lang { padding:12px 20px 4px; }
+.login-card .lang-switch { background:var(--bg); border-color:var(--border); margin-bottom:18px; }
+.login-card .lang-switch .lang-btn { color:var(--text-secondary); }
+.login-card .lang-switch .lang-btn.active { background:var(--green); color:#fff; }
+
+/* ── Arabic (RTL) ──────────────────────────────────────── */
+html[dir="rtl"] body { font-family:Tahoma,'Segoe UI','Noto Sans Arabic',sans-serif; }
+html[dir="rtl"] .sidebar { left:auto; right:0; }
+html[dir="rtl"] .main { margin-left:0; margin-right:var(--sidebar-w); }
+html[dir="rtl"] .sidebar-nav a.active { border-right:0; border-left:3px solid var(--gold); }
+html[dir="rtl"] th { text-align:right; }
+html[dir="rtl"] .toggle::after { left:auto; right:2px; }
+html[dir="rtl"] .toggle.active::after { left:auto; right:20px; }
+html[dir="rtl"] .sidebar-brand h1,
+html[dir="rtl"] .page-header h2,
+html[dir="rtl"] .modal h3,
+html[dir="rtl"] .login-card h1,
+html[dir="rtl"] .stat-card .value { font-family:Tahoma,'Segoe UI','Noto Sans Arabic',serif; }
+@media(max-width:768px) { html[dir="rtl"] .main { margin-right:0; } }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const API = window.location.pathname.startsWith('/nyluver/') ? '/nyluver' : '';
 let currentUser = null;
 let currentPage = 'dashboard';
 let pageData = {};
+
+// ═══════ LOCALIZATION (EN / AR) ═══════
+// The UI templates stay in English; every visible string is translated at
+// render time from this dictionary. Keys are the English source strings.
+const LANG_KEY = 'nyluver-admin-lang';
+let LANG = 'en';
+try { LANG = localStorage.getItem(LANG_KEY) === 'ar' ? 'ar' : 'en'; } catch (e) {}
+
+const AR = {
+  'Catalog': 'الكتالوج',
+  'Operations': 'العمليات',
+  'Marketing': 'التسويق',
+  'System': 'النظام',
+  'Account': 'الحساب',
+  'Admin Panel': 'لوحة الإدارة',
+  'Admin Dashboard': 'لوحة تحكم المشرف',
+  'Dashboard': 'لوحة التحكم',
+  'Products': 'المنتجات',
+  'Categories': 'الفئات',
+  'Occasions': 'المناسبات',
+  'Moods': 'الأجواء',
+  'Add-Ons': 'الإضافات',
+  'Orders': 'الطلبات',
+  'Drivers': 'السائقون',
+  'Slots': 'الفترات',
+  'Promo Codes': 'أكواد الخصم',
+  'Banners': 'البانرات',
+  'Loyalty': 'الولاء',
+  'Subscriptions': 'الاشتراكات',
+  'WhatsApp': 'واتساب',
+  'Fraud': 'الاحتيال',
+  'Users': 'المستخدمون',
+  'Cities': 'المدن',
+  'Logout': 'تسجيل الخروج',
+  'Admin Phone': 'هاتف المشرف',
+  'Send OTP': 'إرسال رمز التحقق',
+  'Enter OTP Code': 'أدخل رمز التحقق',
+  'Login': 'تسجيل الدخول',
+  'Loading...': 'جارٍ التحميل...',
+  'Save': 'حفظ',
+  'Cancel': 'إلغاء',
+  'Close': 'إغلاق',
+  'Edit': 'تعديل',
+  'Remove': 'إزالة',
+  'Del': 'حذف',
+  'Delete': 'حذف',
+  'Update': 'تحديث',
+  'View': 'عرض',
+  'Actions': 'الإجراءات',
+  'Status': 'الحالة',
+  'Active': 'نشط',
+  'Inactive': 'غير نشط',
+  'Featured': 'مميز',
+  'Popular': 'شائع',
+  'Yes': 'نعم',
+  'No': 'لا',
+  'All': 'الكل',
+  'Open': 'مفتوح',
+  'Resolve': 'حل',
+  'Resolved': 'محلول',
+  'Unresolved': 'غير محلول',
+  'Total Orders': 'إجمالي الطلبات',
+  'Customers': 'العملاء',
+  "Today's Revenue": 'إيرادات اليوم',
+  'Orders by Status': 'الطلبات حسب الحالة',
+  'LYD': 'د.ل',
+  'USD': 'دولار',
+  'Product': 'المنتج',
+  'Category': 'الفئة',
+  'Price (LYD)': 'السعر (د.ل)',
+  'Price (USD)': 'السعر (دولار)',
+  'Stock': 'المخزون',
+  '+ Add Product': '+ إضافة منتج',
+  'No products yet': 'لا توجد منتجات بعد',
+  'Name (EN)': 'الاسم (إنجليزي)',
+  'Name (AR)': 'الاسم (عربي)',
+  'Description (EN)': 'الوصف (إنجليزي)',
+  'Description (AR)': 'الوصف (عربي)',
+  'Price LYD': 'السعر بالدينار',
+  'Price USD': 'السعر بالدولار',
+  'Stock Count': 'كمية المخزون',
+  'Image URLs (one per line)': 'روابط الصور (رابط في كل سطر)',
+  '+ Add Category': '+ إضافة فئة',
+  'Slug': 'المُعرّف',
+  'Sort': 'الترتيب',
+  'Sort Order': 'ترتيب العرض',
+  'Name EN': 'الاسم بالإنجليزية',
+  'Name AR': 'الاسم بالعربية',
+  '+ Add Occasion': '+ إضافة مناسبة',
+  'Color': 'اللون',
+  '+ Add Mood': '+ إضافة جو',
+  '+ Add': '+ إضافة',
+  'Paid': 'مدفوع',
+  'In Prep': 'قيد التحضير',
+  'Ready': 'جاهز',
+  'Delivering': 'قيد التوصيل',
+  'Delivered': 'تم التوصيل',
+  'Order #': 'رقم الطلب',
+  'Recipient': 'المستلم',
+  'Total': 'الإجمالي',
+  'Date': 'التاريخ',
+  'Flagged': 'مُبلَّغ عنه',
+  'Receipt': 'الإيصال',
+  'No orders yet': 'لا توجد طلبات بعد',
+  'Recipient:': 'المستلم:',
+  'Sender:': 'المرسل:',
+  'Address:': 'العنوان:',
+  'Slot:': 'الفترة:',
+  'Card Message:': 'رسالة البطاقة:',
+  'Item': 'العنصر',
+  'Qty': 'الكمية',
+  'Price': 'السعر',
+  'Update Status': 'تحديث الحالة',
+  'Assign Driver': 'تعيين سائق',
+  '-- Select --': '-- اختر --',
+  'Admin Notes': 'ملاحظات المشرف',
+  'WhatsApp Contact Log': 'سجل التواصل عبر واتساب',
+  'WA Notes': 'ملاحظات واتساب',
+  'Notes...': 'ملاحظات...',
+  'Log WA Contact': 'تسجيل تواصل واتساب',
+  'Save Changes': 'حفظ التغييرات',
+  '+ Add Driver': '+ إضافة سائق',
+  'Name': 'الاسم',
+  'Phone': 'الهاتف',
+  'Busy': 'مشغول',
+  'Available': 'متاح',
+  'Delivery Slots': 'فترات التوصيل',
+  'City': 'المدينة',
+  'Load Slots': 'تحميل الفترات',
+  'Blackout Dates': 'أيام الإغلاق',
+  'Reason': 'السبب',
+  'Holiday, etc.': 'عطلة، إلخ.',
+  'Add Blackout': 'إضافة إغلاق',
+  'Time': 'الوقت',
+  'Capacity': 'السعة',
+  'Used': 'المستخدم',
+  'No blackout dates': 'لا توجد أيام إغلاق',
+  '+ Add Code': '+ إضافة كود',
+  'Code': 'الكود',
+  'Type': 'النوع',
+  'Value': 'القيمة',
+  'Max': 'الحد الأقصى',
+  'Percentage': 'نسبة مئوية',
+  'Fixed Amount': 'مبلغ ثابت',
+  'Min Order': 'الحد الأدنى للطلب',
+  'Max Uses': 'الحد الأقصى للاستخدام',
+  'First Order Only': 'للطلب الأول فقط',
+  'Expires At': 'تاريخ الانتهاء',
+  '+ Add Banner': '+ إضافة بانر',
+  'No banners': 'لا توجد بانرات',
+  'Title EN': 'العنوان بالإنجليزية',
+  'Title AR': 'العنوان بالعربية',
+  'Subtitle EN': 'العنوان الفرعي بالإنجليزية',
+  'Subtitle AR': 'العنوان الفرعي بالعربية',
+  'Image URL': 'رابط الصورة',
+  'Loyalty Program': 'برنامج الولاء',
+  'Configuration': 'الإعدادات',
+  'Earn Type': 'نوع الكسب',
+  'Percentage of Order': 'نسبة من الطلب',
+  'Fixed Points': 'نقاط ثابتة',
+  'Earn Value': 'قيمة الكسب',
+  'Points per Unit (redemption)': 'نقاط لكل وحدة (الاستبدال)',
+  'Redemption Enabled': 'تفعيل الاستبدال',
+  'Save Configuration': 'حفظ الإعدادات',
+  'Subscription Plans': 'خطط الاشتراك',
+  '+ Add Plan': '+ إضافة خطة',
+  'Frequency': 'التكرار',
+  'No subscription plans yet': 'لا توجد خطط اشتراك بعد',
+  'Desc EN': 'الوصف بالإنجليزية',
+  'Desc AR': 'الوصف بالعربية',
+  'Weekly': 'أسبوعي',
+  'Monthly': 'شهري',
+  'WhatsApp Templates': 'قوالب واتساب',
+  '+ Add Template': '+ إضافة قالب',
+  'No templates': 'لا توجد قوالب',
+  'Body EN': 'النص بالإنجليزية',
+  'Body AR': 'النص بالعربية',
+  'Placeholders (comma-separated)': 'المتغيرات (مفصولة بفواصل)',
+  'Fraud Detection': 'كشف الاحتيال',
+  'Order': 'الطلب',
+  'No fraud flags': 'لا توجد بلاغات احتيال',
+  'Role': 'الدور',
+  'Points': 'النقاط',
+  'Blacklisted': 'محظور',
+  'Joined': 'تاريخ الانضمام',
+  'Blacklist': 'حظر',
+  '+ Add City': '+ إضافة مدينة',
+  'Currency': 'العملة',
+  'VAT': 'ضريبة القيمة المضافة',
+  'Mode': 'الوضع',
+  'VAT %': 'نسبة الضريبة %',
+  'FX to USD': 'سعر الصرف مقابل الدولار',
+  'VAT Enabled': 'تفعيل الضريبة',
+  'Inventory Mode': 'وضع المخزون',
+  'Quota': 'الحصة',
+  'Edit Category': 'تعديل فئة',
+  'Add Category': 'إضافة فئة',
+  'Edit Occasion': 'تعديل مناسبة',
+  'Add Occasion': 'إضافة مناسبة',
+  'Edit Mood': 'تعديل جو',
+  'Add Mood': 'إضافة جو',
+  'Edit Add-On': 'تعديل إضافة',
+  'Add Add-On': 'إضافة إضافة',
+  'Edit Driver': 'تعديل سائق',
+  'Add Driver': 'إضافة سائق',
+  'Edit Promo Code': 'تعديل كود خصم',
+  'Add Promo Code': 'إضافة كود خصم',
+  'Edit Banner': 'تعديل بانر',
+  'Add Banner': 'إضافة بانر',
+  'Edit Plan': 'تعديل خطة',
+  'Add Plan': 'إضافة خطة',
+  'Edit Template': 'تعديل قالب',
+  'Add Template': 'إضافة قالب',
+  'Edit City': 'تعديل مدينة',
+  'Add City': 'إضافة مدينة',
+  'pending payment': 'بانتظار الدفع',
+  'awaiting recipient': 'بانتظار تأكيد المستلم',
+  'accepted': 'مقبول',
+  'in prep': 'قيد التحضير',
+  'ready': 'جاهز',
+  'out for delivery': 'قيد التوصيل',
+  'delivered': 'تم التوصيل',
+  'failed delivery': 'فشل التوصيل',
+  'cancelled': 'ملغي',
+  'No phone number available': 'لا يوجد رقم هاتف متاح',
+  'Driver updated': 'تم تحديث السائق',
+  'Driver added': 'تمت إضافة السائق',
+  'Driver removed': 'تمت إزالة السائق',
+  'Remove driver?': 'إزالة السائق؟',
+  'This driver will be removed from the list. Past orders stay intact.': 'سيتم إزالة هذا السائق من القائمة. ستبقى الطلبات السابقة كما هي.',
+  'Delete banner?': 'حذف البانر؟',
+  'This banner will be permanently removed.': 'سيتم حذف هذا البانر نهائياً.',
+  'Banner deleted': 'تم حذف البانر',
+  'Loyalty config saved!': 'تم حفظ إعدادات الولاء!',
+  'Blacklist user?': 'حظر المستخدم؟',
+  'This user will be blocked from the app.': 'سيتم حظر هذا المستخدم من التطبيق.',
+  'User blacklisted': 'تم حظر المستخدم',
+};
+
+// Translate a single UI string (identity when the language is English).
+function t(key) {
+  if (LANG !== 'ar' || key === undefined || key === null) return key;
+  return Object.prototype.hasOwnProperty.call(AR, key) ? AR[key] : key;
+}
+
+// Translate one text chunk, keeping surrounding whitespace and any leading
+// HTML entity (the sidebar icons are entities, e.g. "&#9632; Dashboard").
+function translateText(text) {
+  if (LANG !== 'ar' || typeof text !== 'string' || !text) return text;
+  const m = text.match(/^(\s*(?:&#?\w+;\s*)*)([\s\S]*?)(\s*)$/);
+  if (!m) return text;
+  const ar = AR[m[2]];
+  return ar ? m[1] + ar + m[3] : text;
+}
+
+// Walk a subtree and translate its text nodes + placeholders in place.
+function translateDom(root) {
+  if (LANG !== 'ar' || !root || !root.nodeType) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentNode;
+      if (!parent || parent.nodeType !== 1) return NodeFilter.FILTER_REJECT;
+      const tag = parent.nodeName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') return NodeFilter.FILTER_REJECT;
+      if (parent.closest && parent.closest('[data-no-translate]')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const next = translateText(node.nodeValue);
+    if (next !== node.nodeValue) node.nodeValue = next;
+  });
+  const els = [];
+  if (root.nodeType === 1 && root.hasAttribute && root.hasAttribute('placeholder')) els.push(root);
+  if (root.querySelectorAll) root.querySelectorAll('[placeholder]').forEach(el => els.push(el));
+  els.forEach(el => {
+    const value = el.getAttribute('placeholder');
+    const next = translateText(value);
+    if (next !== value) el.setAttribute('placeholder', next);
+  });
+}
+
+let translateQueued = false;
+function queueTranslate() {
+  if (LANG !== 'ar' || translateQueued) return;
+  translateQueued = true;
+  requestAnimationFrame(() => {
+    translateQueued = false;
+    try { translateDom(document.body); } catch (e) {}
+  });
+}
+
+// Every page renders its markup as an HTML string, so translations are applied
+// as soon as that markup lands in the DOM.
+function observeTranslations() {
+  const observer = new MutationObserver(mutations => {
+    if (LANG !== 'ar') return;
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') { queueTranslate(); return; }
+      if (mutation.type === 'attributes' && mutation.attributeName === 'placeholder') {
+        const el = mutation.target;
+        const value = el.getAttribute('placeholder');
+        const next = translateText(value);
+        if (next !== value) el.setAttribute('placeholder', next);
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['placeholder'] });
+}
+
+function applyLangAttrs() {
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+}
+
+function langSwitcherHtml() {
+  return '<div class="lang-switch" data-no-translate>'
+    + '<button type="button" class="lang-btn' + (LANG === 'en' ? ' active' : '') + '" onclick="setLang(\'en\')">English</button>'
+    + '<button type="button" class="lang-btn' + (LANG === 'ar' ? ' active' : '') + '" onclick="setLang(\'ar\')">العربية</button>'
+    + '</div>';
+}
+
+function setLang(lang) {
+  if (lang !== 'en' && lang !== 'ar') return;
+  LANG = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  applyLangAttrs();
+  if (currentUser) renderApp(); else renderLogin();
+}
+
+function showToast(message, icon = 'success') {
+  Swal.fire({ toast: true, position: LANG === 'ar' ? 'top-start' : 'top-end', icon, title: t(message), showConfirmButton: false, timer: 2500, timerProgressBar: true, dir: LANG === 'ar' ? 'rtl' : 'ltr' });
+}
+
+async function confirmDialog(title, text, confirmButtonText = 'Yes') {
+  const result = await Swal.fire({ title: t(title), text: t(text), icon: 'warning', showCancelButton: true, confirmButtonColor: '#C04040', cancelButtonColor: '#6B7C74', confirmButtonText: t(confirmButtonText), cancelButtonText: t('Cancel'), dir: LANG === 'ar' ? 'rtl' : 'ltr' });
+  return result.isConfirmed;
+}
 
 async function api(path, opts = {}) {
   const res = await fetch(API + path, {
@@ -511,7 +876,7 @@ async function renderOrders(el) {
         <td><span class="badge badge-${statusColors[o.status]||'gray'}">${o.status.replace(/_/g,' ')}</span></td>
         <td>${new Date(o.createdAt).toLocaleDateString()}</td>
         <td>${o.isFlagged?'<span class="badge badge-red">Flagged</span>':'-'}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')">View</button></td>
+        <td><button class="btn btn-outline btn-sm" onclick="showOrderDetail('${o.id}')">View</button> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${o.id}/receipt','_blank')">Receipt</button></td>
       </tr>`).join('')}</tbody>
     </table>${orders.length===0?'<div class="empty-state"><p>No orders yet</p></div>':''}</div>`;
 }
@@ -532,7 +897,7 @@ async function showOrderDetail(id) {
   modal.className = 'modal-overlay';
   modal.onclick = e => { if(e.target===modal)modal.remove(); };
   modal.innerHTML = `<div class="modal" style="max-width:700px">
-    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><span class="badge badge-blue">${order.status.replace(/_/g,' ')}</span></div>
+    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><div><span class="badge badge-blue">${order.status.replace(/_/g,' ')}</span> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${order.id}/receipt','_blank')">Receipt</button></div></div>
     <div style="margin:16px 0;padding:16px;background:var(--bg);border-radius:8px">
       <div class="form-row">
         <div><strong>Recipient:</strong> ${order.recipientName}<br>${order.recipientPhone}</div>
@@ -540,10 +905,6 @@ async function showOrderDetail(id) {
       </div>
       <div style="margin-top:8px"><strong>Address:</strong> ${order.address||'N/A'} &nbsp; <strong>Slot:</strong> ${order.slotDate||'N/A'} ${order.slotTime||''}</div>
       ${order.cardMessage?`<div style="margin-top:8px"><strong>Card Message:</strong> <em>"${order.cardMessage}"</em></div>`:''}
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button onclick="sendWA('${order.recipientPhone||''}','Hello ${order.recipientName}! Regarding your Nyluver gift order #${order.orderNumber} 🌸','${order.id}',this)" class="btn btn-sm" style="background:#25D366;color:#fff">&#9742; Message Recipient</button>
-        ${order.sender?.phone?`<button onclick="sendWA('${order.sender.phone}','Hello ${order.sender.nameEn||''}! Regarding your Nyluver order #${order.orderNumber} 🌸','${order.id}',this)" class="btn btn-sm btn-outline" style="color:#25D366;border-color:#25D366">&#9742; Message Sender</button>`:''}
-      </div>
     </div>
     <table style="margin-bottom:16px"><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
     <tbody>${(order.items||[]).map(i=>`<tr><td>${i.productNameEn}<br><small>${i.productNameAr}</small>${(i.addOns||[]).map(a=>`<br><span class="tag">${a.nameEn}</span>`).join('')}</td><td>${i.quantity}</td><td>${i.unitPrice} LYD</td></tr>`).join('')}
@@ -559,10 +920,6 @@ async function showOrderDetail(id) {
     <div class="form-group"><label>Admin Notes</label><textarea id="od-notes">${order.adminNotes||''}</textarea></div>
     <h4 style="margin:12px 0 8px">WhatsApp Contact Log</h4>
     ${(order.whatsappLogs||[]).map(l=>`<div style="padding:6px;border-bottom:1px solid var(--border);font-size:12px"><strong>${l.templateUsed||'Manual'}</strong> - ${l.outcome||'sent'} <small style="color:var(--text-secondary)">${new Date(l.contactedAt).toLocaleString()}</small>${l.notes?`<br>${l.notes}`:''}</div>`).join('')}
-    <div class="form-row" style="margin-top:8px">
-      <div class="form-group"><label>Template</label><select id="od-wa-tpl"><option value="">Manual</option>${templates.map(t=>`<option value="${t.nameEn}">${t.nameEn}</option>`).join('')}</select></div>
-      <div class="form-group"><label>Outcome</label><input id="od-wa-out" placeholder="responded, no answer..."></div>
-    </div>
     <div class="form-group"><label>WA Notes</label><input id="od-wa-notes" placeholder="Notes..."></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Close</button>
@@ -583,7 +940,7 @@ async function updateOrder(id) {
 }
 
 async function sendWA(phone, message, orderId, btn) {
-  if (!phone) { alert('No phone number available'); return; }
+  if (!phone) { showToast('No phone number available', 'warning'); return; }
   const origText = btn.innerHTML;
   btn.innerHTML = '⏳ Sending...';
   btn.disabled = true;
@@ -607,38 +964,63 @@ async function sendWA(phone, message, orderId, btn) {
 
 async function logWhatsApp(orderId) {
   await api('/api/admin/whatsapp-log', {method:'POST', body:{
-    orderId, templateUsed:document.getElementById('od-wa-tpl').value||'Manual',
+    orderId, templateUsed:'Manual',
     outcome:document.getElementById('od-wa-out').value, notes:document.getElementById('od-wa-notes').value, language:'en'
   }});
   showOrderDetail(orderId);
 }
 
 // ═══════ DRIVERS ═══════
+function driverBadge(d) {
+  if (d.status === 'busy') return '<span class="badge badge-amber">Busy</span>';
+  if (d.status === 'inactive' || d.isActive === false) return '<span class="badge badge-gray">Inactive</span>';
+  return '<span class="badge badge-green">Active</span>';
+}
+
 async function renderDrivers(el) {
   const drivers = await api('/api/admin/drivers');
   el.innerHTML = `<div class="page-header"><h2>Drivers</h2><button class="btn btn-primary" onclick="showDriverModal()">+ Add Driver</button></div>
-    <div class="card"><table><thead><tr><th>Name</th><th>Phone</th><th>Active</th><th>Actions</th></tr></thead>
-    <tbody>${drivers.map(d=>`<tr><td>${d.name}</td><td>${d.phone}</td><td>${d.isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick='showDriverModal(${JSON.stringify(d)})'>Edit</button></td></tr>`).join('')}</tbody></table></div>`;
+    <div class="card"><table><thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${drivers.map(d=>`<tr><td>${d.name}</td><td>${d.phone}</td><td>${driverBadge(d)}</td>
+      <td><button class="btn btn-outline btn-sm" onclick='showDriverModal(${JSON.stringify(d)})'>Edit</button>
+      <button class="btn btn-outline btn-sm" style="color:#C04040" onclick="removeDriver('${d.id}')">Remove</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 
 function showDriverModal(d) {
-  d = d || {name:'',phone:'',isActive:true};
+  d = d || {name:'',phone:'',status:'active'};
   const modal = document.createElement('div');
   modal.className='modal-overlay';
   modal.onclick=e=>{if(e.target===modal)modal.remove();};
   modal.innerHTML=`<div class="modal"><h3>${d.id?'Edit':'Add'} Driver</h3>
     <div class="form-row"><div class="form-group"><label>Name</label><input id="md-name" value="${d.name}"></div><div class="form-group"><label>Phone</label><input id="md-phone" value="${d.phone}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Status</label><select id="md-status"><option value="active" ${(d.status||'active')==='active'?'selected':''}>Active</option><option value="busy" ${d.status==='busy'?'selected':''}>Busy</option></select></div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveDriver('${d.id||''}')">Save</button></div></div>`;
   document.body.appendChild(modal);
 }
 
 async function saveDriver(id) {
-  const data={name:document.getElementById('md-name').value,phone:document.getElementById('md-phone').value};
-  if(id) await api('/api/admin/drivers/'+id,{method:'PUT',body:data});
-  else await api('/api/admin/drivers',{method:'POST',body:data});
-  document.querySelector('.modal-overlay')?.remove();
-  nav('drivers');
+  const data={name:document.getElementById('md-name').value,phone:document.getElementById('md-phone').value,status:document.getElementById('md-status').value};
+  try {
+    if(id) await api('/api/admin/drivers/'+id,{method:'PUT',body:data});
+    else await api('/api/admin/drivers',{method:'POST',body:data});
+    document.querySelector('.modal-overlay')?.remove();
+    showToast(id ? 'Driver updated' : 'Driver added');
+    nav('drivers');
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+  }
+}
+
+async function removeDriver(id) {
+  const ok = await confirmDialog('Remove driver?', 'This driver will be removed from the list. Past orders stay intact.');
+  if (!ok) return;
+  try {
+    await api('/api/admin/drivers/'+id,{method:'DELETE'});
+    showToast('Driver removed');
+    nav('drivers');
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+  }
 }
 
 // ═══════ SLOTS ═══════
@@ -717,6 +1099,7 @@ function showPromoModal(p) {
     <div class="form-row"><div class="form-group"><label>Code</label><input id="mpr-code" value="${p.code}" style="text-transform:uppercase"></div><div class="form-group"><label>Type</label><select id="mpr-type"><option value="percentage" ${p.type==='percentage'?'selected':''}>Percentage</option><option value="fixed" ${p.type==='fixed'?'selected':''}>Fixed Amount</option></select></div></div>
     <div class="form-row-3"><div class="form-group"><label>Value</label><input id="mpr-val" type="number" value="${p.value}"></div><div class="form-group"><label>Min Order</label><input id="mpr-min" type="number" value="${p.minOrderAmount||''}"></div><div class="form-group"><label>Max Uses</label><input id="mpr-max" type="number" value="${p.maxUses||''}"></div></div>
     <div class="form-row"><div class="form-group"><label>First Order Only</label><select id="mpr-fo"><option value="false" ${!p.isFirstOrderOnly?'selected':''}>No</option><option value="true" ${p.isFirstOrderOnly?'selected':''}>Yes</option></select></div><div class="form-group"><label>Active</label><select id="mpr-act"><option value="true" ${p.isActive?'selected':''}>Yes</option><option value="false" ${!p.isActive?'selected':''}>No</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label>Expires At</label><input id="mpr-exp" type="datetime-local" value="${p.expiresAt?p.expiresAt.slice(0,16):''}"></div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="savePromo('${p.id||''}')">Save</button></div></div>`;
   document.body.appendChild(modal);
 }
@@ -724,7 +1107,7 @@ function showPromoModal(p) {
 async function savePromo(id) {
   const data={code:document.getElementById('mpr-code').value,type:document.getElementById('mpr-type').value,value:document.getElementById('mpr-val').value,
     minOrderAmount:document.getElementById('mpr-min').value||null,maxUses:document.getElementById('mpr-max').value?parseInt(document.getElementById('mpr-max').value):null,
-    isFirstOrderOnly:document.getElementById('mpr-fo').value==='true',isActive:document.getElementById('mpr-act').value==='true'};
+    isFirstOrderOnly:document.getElementById('mpr-fo').value==='true',isActive:document.getElementById('mpr-act').value==='true',expiresAt:document.getElementById('mpr-exp').value?new Date(document.getElementById('mpr-exp').value).toISOString():null};
   if(id) await api('/api/admin/promos/'+id,{method:'PUT',body:data});
   else await api('/api/admin/promos',{method:'POST',body:data});
   document.querySelector('.modal-overlay')?.remove();
@@ -767,9 +1150,15 @@ async function saveBanner(id) {
 }
 
 async function deleteBanner(id) {
-  if(!confirm('Delete this banner?')) return;
-  await api('/api/admin/banners/'+id,{method:'DELETE'});
-  nav('banners');
+  const ok = await confirmDialog('Delete banner?', 'This banner will be permanently removed.');
+  if (!ok) return;
+  try {
+    await api('/api/admin/banners/'+id,{method:'DELETE'});
+    showToast('Banner deleted');
+    nav('banners');
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+  }
 }
 
 // ═══════ LOYALTY ═══════
@@ -793,7 +1182,7 @@ async function saveLoyalty() {
     pointsPerUnit:document.getElementById('ly-ppu').value,
     redemptionEnabled:document.getElementById('ly-redeem').value==='true'
   }});
-  alert('Loyalty config saved!');
+  showToast('Loyalty config saved!');
 }
 
 // ═══════ SUBSCRIPTIONS ═══════
@@ -908,9 +1297,15 @@ async function renderUsers(el) {
 }
 
 async function blacklistUser(id) {
-  if(!confirm('Blacklist this user?')) return;
-  await api('/api/admin/users/'+id+'/blacklist',{method:'POST'});
-  nav('users');
+  const ok = await confirmDialog('Blacklist user?', 'This user will be blocked from the app.');
+  if (!ok) return;
+  try {
+    await api('/api/admin/users/'+id+'/blacklist',{method:'POST'});
+    showToast('User blacklisted');
+    nav('users');
+  } catch (e) {
+    Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+  }
 }
 
 // ═══════ CITIES ═══════

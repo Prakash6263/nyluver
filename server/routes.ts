@@ -8,6 +8,7 @@ import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
 import crypto from "crypto";
 import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate, sendWhatsAppMessage } from "./whatsapp";
+import { renderReceiptHtml } from "./receipt";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -419,7 +420,7 @@ export function registerRoutes(app: Express) {
   // ═══════════════════════════════════════
   app.post('/api/promo/validate', async (req, res) => {
     try {
-      const { code, orderAmount } = req.body;
+      const { code, orderAmount, userId, categoryIds } = req.body;
       const promo = await storage.getPromoByCode(code);
       if (!promo) return res.status(404).json({ error: 'Invalid code' });
       if (promo.maxUses && promo.usedCount >= promo.maxUses) return res.status(400).json({ error: 'Code exhausted' });
@@ -427,13 +428,18 @@ export function registerRoutes(app: Express) {
       if (promo.minOrderAmount && orderAmount < parseFloat(promo.minOrderAmount)) {
         return res.status(400).json({ error: `Minimum order ${promo.minOrderAmount}` });
       }
-
-      let discount = 0;
-      if (promo.type === 'percentage') {
-        discount = orderAmount * parseFloat(promo.value) / 100;
-      } else {
-        discount = parseFloat(promo.value);
+      if (promo.isFirstOrderOnly && userId) {
+        const orderCount = await storage.getUserOrderCount(userId);
+        if (orderCount > 0) return res.status(400).json({ error: 'Valid on first order only' });
       }
+      if (promo.categoryId && Array.isArray(categoryIds) && !categoryIds.includes(promo.categoryId)) {
+        return res.status(400).json({ error: 'Promo not applicable to items in cart' });
+      }
+
+      let discount = promo.type === 'percentage'
+        ? orderAmount * parseFloat(promo.value) / 100
+        : parseFloat(promo.value);
+      if (discount > orderAmount) discount = orderAmount;
 
       res.json({ valid: true, promo, discount });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
@@ -717,6 +723,15 @@ export function registerRoutes(app: Express) {
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  app.get('/api/admin/orders/:id/receipt', adminAuth, async (req, res) => {
+    try {
+      const order = await storage.getOrder((req.params.id as string));
+      if (!order) return res.status(404).json({ error: 'Not found' });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(renderReceiptHtml(order));
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   app.put('/api/admin/orders/:id/status', adminAuth, async (req, res) => {
     try {
       const { status, notes } = req.body;
@@ -759,6 +774,11 @@ export function registerRoutes(app: Express) {
 
   app.put('/api/admin/drivers/:id', adminAuth, async (req, res) => {
     try { res.json(await storage.updateDriver((req.params.id as string), req.body)); }
+    catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.delete('/api/admin/drivers/:id', adminAuth, async (req, res) => {
+    try { res.json(await storage.deleteDriver((req.params.id as string))); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -856,6 +876,19 @@ export function registerRoutes(app: Express) {
       }
       const result = await sendWhatsAppMessage(phone, message);
       if (!result.success) {
+        if (result.notConfigured || result.code === 133010) {
+          if (orderId) {
+            const sess = req.session as any;
+            await storage.addWhatsappLog({
+              orderId,
+              templateUsed: 'Direct Message',
+              outcome: 'pending',
+              notes: message,
+              createdBy: sess.userId,
+            });
+          }
+          return res.json({ success: true, pending: true, message: 'WhatsApp not ready yet — message saved as pending' });
+        }
         return res.status(500).json({ error: 'Failed to send WhatsApp message' });
       }
       if (orderId) {
@@ -868,6 +901,61 @@ export function registerRoutes(app: Express) {
           createdBy: sess.userId,
         });
       }
+      res.json({ success: true, messageId: result.messageId });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/admin/whatsapp/send-template', adminAuth, async (req, res) => {
+    try {
+      const { orderId, templateId, target } = req.body;
+      const order = await storage.getOrder(orderId);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      const template = await storage.getWhatsappTemplateById(templateId);
+      if (!template) return res.status(404).json({ error: 'Template not found' });
+
+      const phone = target === 'sender' ? order.sender?.phone : order.recipientPhone;
+      if (!phone) return res.status(400).json({ error: 'No phone available for this target' });
+
+      const vars: Record<string, string> = {
+        orderNumber: order.orderNumber,
+        order_number: order.orderNumber,
+        recipientName: order.recipientName || '',
+        recipient_name: order.recipientName || '',
+        recipientPhone: order.recipientPhone || '',
+        recipient_phone: order.recipientPhone || '',
+        senderName: order.sender?.nameEn || '',
+        sender_name: order.sender?.nameEn || '',
+        senderPhone: order.sender?.phone || '',
+        sender_phone: order.sender?.phone || '',
+        total: order.total,
+      };
+      const body = (template.bodyEn || '').replace(/\{(\w+)\}/g, (m: string, k: string) => vars[k] ?? m);
+
+      const result = await sendWhatsAppMessage(phone, body);
+      const sess = req.session as any;
+      if (!result.success) {
+        if (result.notConfigured || result.code === 133010) {
+          await storage.addWhatsappLog({
+            orderId,
+            templateUsed: template.nameEn,
+            outcome: 'pending',
+            notes: body,
+            language: 'en',
+            createdBy: sess.userId,
+          });
+          return res.json({ success: true, pending: true, message: 'WhatsApp not ready yet — message saved as pending' });
+        }
+        return res.status(500).json({ error: 'Failed to send WhatsApp message' });
+      }
+
+      await storage.addWhatsappLog({
+        orderId,
+        templateUsed: template.nameEn,
+        outcome: 'sent',
+        notes: body,
+        language: 'en',
+        createdBy: sess.userId,
+      });
       res.json({ success: true, messageId: result.messageId });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
