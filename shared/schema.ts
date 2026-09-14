@@ -49,6 +49,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   phone: text("phone").notNull().unique(),
   email: text("email"),
+  passwordHash: text("password_hash"),
   nameEn: text("name_en"),
   nameAr: text("name_ar"),
   role: userRoleEnum("role").notNull().default('customer'),
@@ -64,7 +65,9 @@ export const users = pgTable("users", {
 // ───── OTP VERIFICATION ─────
 export const otpCodes = pgTable("otp_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  phone: text("phone").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  purpose: text("purpose").notNull().default('login'),
   code: text("code").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   used: boolean("used").notNull().default(false),
@@ -345,6 +348,19 @@ export const promoCodes = pgTable("promo_codes", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Each promo can be redeemed only once by a user. maxUses therefore counts
+// unique users, while this table prevents repeat and concurrent redemptions.
+export const promoRedemptions = pgTable("promo_redemptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  orderId: varchar("order_id").references(() => orders.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  promoUserUnique: uniqueIndex("promo_redemptions_promo_user_unique").on(table.promoCodeId, table.userId),
+  promoIndex: index("promo_redemptions_promo_idx").on(table.promoCodeId),
+}));
+
 // ───── SUBSCRIPTIONS ─────
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -406,6 +422,22 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ───── CONTENT PAGES (Support / About / Privacy / Terms) ─────
+export const contentPages = pgTable("content_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  titleEn: text("title_en").notNull(),
+  titleAr: text("title_ar").notNull(),
+  bodyEn: text("body_en").notNull().default(''),
+  bodyAr: text("body_ar").notNull().default(''),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
+  contactWhatsapp: text("contact_whatsapp"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // ───── INSERT SCHEMAS ─────
 export const insertCitySchema = createInsertSchema(cities).omit({ id: true, createdAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLoginAt: true });
@@ -420,6 +452,7 @@ export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({ id: t
 export const insertDriverSchema = createInsertSchema(drivers).omit({ id: true, createdAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true });
 export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates).omit({ id: true });
+export const insertContentPageSchema = createInsertSchema(contentPages).omit({ id: true, updatedAt: true });
 
 // ───── TYPES ─────
 export type City = typeof cities.$inferSelect;
@@ -438,8 +471,11 @@ export type DeliverySlot = typeof deliverySlots.$inferSelect;
 export type Driver = typeof drivers.$inferSelect;
 export type Banner = typeof banners.$inferSelect;
 export type PromoCode = typeof promoCodes.$inferSelect;
+export type PromoRedemption = typeof promoRedemptions.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+export type ContentPage = typeof contentPages.$inferSelect;
+export type InsertContentPage = z.infer<typeof insertContentPageSchema>;
 export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
 export type WhatsappLog = typeof whatsappLogs.$inferSelect;
 export type FraudFlag = typeof fraudFlags.$inferSelect;

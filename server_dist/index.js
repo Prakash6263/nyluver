@@ -16,6 +16,7 @@ __export(schema_exports, {
   blackoutDates: () => blackoutDates,
   categories: () => categories,
   cities: () => cities,
+  contentPages: () => contentPages,
   deliveryAssignments: () => deliveryAssignments,
   deliverySlots: () => deliverySlots,
   drivers: () => drivers,
@@ -24,6 +25,7 @@ __export(schema_exports, {
   insertBannerSchema: () => insertBannerSchema,
   insertCategorySchema: () => insertCategorySchema,
   insertCitySchema: () => insertCitySchema,
+  insertContentPageSchema: () => insertContentPageSchema,
   insertDriverSchema: () => insertDriverSchema,
   insertMoodSchema: () => insertMoodSchema,
   insertOccasionSchema: () => insertOccasionSchema,
@@ -50,6 +52,7 @@ __export(schema_exports, {
   productOccasions: () => productOccasions,
   products: () => products,
   promoCodes: () => promoCodes,
+  promoRedemptions: () => promoRedemptions,
   savedRecipients: () => savedRecipients,
   settings: () => settings,
   subscriptionFreqEnum: () => subscriptionFreqEnum,
@@ -72,10 +75,12 @@ import {
   timestamp,
   decimal,
   jsonb,
+  index,
+  uniqueIndex,
   pgEnum
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-var userRoleEnum, orderStatusEnum, inventoryModeEnum, paymentMethodEnum, subscriptionFreqEnum, subscriptionStatusEnum, cities, warehouses, users, otpCodes, savedRecipients, categories, occasions, moods, products, productImages, productOccasions, productMoods, addOns, deliverySlots, blackoutDates, orders, orderItems, orderItemAddOns, paymentTransactions, drivers, deliveryAssignments, whatsappLogs, whatsappTemplates, loyaltyLedger, loyaltyConfig, promoCodes, subscriptionPlans, subscriptions, banners, fraudFlags, settings, insertCitySchema, insertUserSchema, insertProductSchema, insertCategorySchema, insertOccasionSchema, insertMoodSchema, insertAddOnSchema, insertOrderSchema, insertBannerSchema, insertPromoCodeSchema, insertDriverSchema, insertSubscriptionPlanSchema, insertWhatsappTemplateSchema;
+var userRoleEnum, orderStatusEnum, inventoryModeEnum, paymentMethodEnum, subscriptionFreqEnum, subscriptionStatusEnum, cities, warehouses, users, otpCodes, savedRecipients, categories, occasions, moods, products, productImages, productOccasions, productMoods, addOns, deliverySlots, blackoutDates, orders, orderItems, orderItemAddOns, paymentTransactions, drivers, deliveryAssignments, whatsappLogs, whatsappTemplates, loyaltyLedger, loyaltyConfig, promoCodes, promoRedemptions, subscriptionPlans, subscriptions, banners, fraudFlags, settings, contentPages, insertCitySchema, insertUserSchema, insertProductSchema, insertCategorySchema, insertOccasionSchema, insertMoodSchema, insertAddOnSchema, insertOrderSchema, insertBannerSchema, insertPromoCodeSchema, insertDriverSchema, insertSubscriptionPlanSchema, insertWhatsappTemplateSchema, insertContentPageSchema;
 var init_schema = __esm({
   "shared/schema.ts"() {
     "use strict";
@@ -124,6 +129,7 @@ var init_schema = __esm({
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
       phone: text("phone").notNull().unique(),
       email: text("email"),
+      passwordHash: text("password_hash"),
       nameEn: text("name_en"),
       nameAr: text("name_ar"),
       role: userRoleEnum("role").notNull().default("customer"),
@@ -137,7 +143,9 @@ var init_schema = __esm({
     });
     otpCodes = pgTable("otp_codes", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      phone: text("phone").notNull(),
+      phone: text("phone"),
+      email: text("email"),
+      purpose: text("purpose").notNull().default("login"),
       code: text("code").notNull(),
       expiresAt: timestamp("expires_at").notNull(),
       used: boolean("used").notNull().default(false),
@@ -373,6 +381,16 @@ var init_schema = __esm({
       expiresAt: timestamp("expires_at"),
       createdAt: timestamp("created_at").defaultNow().notNull()
     });
+    promoRedemptions = pgTable("promo_redemptions", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      promoCodeId: varchar("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+      userId: varchar("user_id").notNull().references(() => users.id),
+      orderId: varchar("order_id").references(() => orders.id, { onDelete: "set null" }),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    }, (table) => ({
+      promoUserUnique: uniqueIndex("promo_redemptions_promo_user_unique").on(table.promoCodeId, table.userId),
+      promoIndex: index("promo_redemptions_promo_idx").on(table.promoCodeId)
+    }));
     subscriptionPlans = pgTable("subscription_plans", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
       nameEn: text("name_en").notNull(),
@@ -425,6 +443,20 @@ var init_schema = __esm({
       value: text("value").notNull(),
       updatedAt: timestamp("updated_at").defaultNow().notNull()
     });
+    contentPages = pgTable("content_pages", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      slug: text("slug").notNull().unique(),
+      titleEn: text("title_en").notNull(),
+      titleAr: text("title_ar").notNull(),
+      bodyEn: text("body_en").notNull().default(""),
+      bodyAr: text("body_ar").notNull().default(""),
+      contactPhone: text("contact_phone"),
+      contactEmail: text("contact_email"),
+      contactWhatsapp: text("contact_whatsapp"),
+      sortOrder: integer("sort_order").notNull().default(0),
+      isActive: boolean("is_active").notNull().default(true),
+      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    });
     insertCitySchema = createInsertSchema(cities).omit({ id: true, createdAt: true });
     insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLoginAt: true });
     insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
@@ -438,13 +470,23 @@ var init_schema = __esm({
     insertDriverSchema = createInsertSchema(drivers).omit({ id: true, createdAt: true });
     insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true });
     insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates).omit({ id: true });
+    insertContentPageSchema = createInsertSchema(contentPages).omit({ id: true, updatedAt: true });
   }
 });
 
 // server/db.ts
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-var pool, db;
+async function ensureSchema() {
+  for (const statement of REQUIRED_SCHEMA_STATEMENTS) {
+    try {
+      await pool.query(statement);
+    } catch (error) {
+      console.error(`[SCHEMA] Failed: ${statement} -> ${error.message}`);
+    }
+  }
+}
+var pool, db, REQUIRED_SCHEMA_STATEMENTS;
 var init_db = __esm({
   "server/db.ts"() {
     "use strict";
@@ -454,6 +496,12 @@ var init_db = __esm({
     }
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     db = drizzle(pool, { schema: schema_exports });
+    REQUIRED_SCHEMA_STATEMENTS = [
+      `ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_hash text`,
+      `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS email text`,
+      `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'login'`,
+      `ALTER TABLE IF EXISTS otp_codes ALTER COLUMN phone DROP NOT NULL`
+    ];
   }
 });
 
@@ -591,7 +639,7 @@ import express from "express";
 // server/storage.ts
 init_db();
 init_schema();
-import { eq, desc, asc, and, sql as sql2, ilike, gte, or, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, sql as sql2, ilike, gte, or, inArray, isNull } from "drizzle-orm";
 var storage = {
   // ───── CITIES ─────
   async getCities() {
@@ -637,6 +685,10 @@ var storage = {
     const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     return user;
   },
+  async setUserPassword(userId, passwordHash) {
+    const [user] = await db.update(users).set({ passwordHash }).where(eq(users.id, userId)).returning();
+    return user;
+  },
   async getUserCount() {
     const [result] = await db.select({ count: sql2`count(*)::int` }).from(users);
     return result.count;
@@ -659,6 +711,67 @@ var storage = {
   },
   async verifyOtp(phone, code) {
     const [otp] = await db.select().from(otpCodes).where(and(eq(otpCodes.phone, phone), eq(otpCodes.code, code), eq(otpCodes.used, false), gte(otpCodes.expiresAt, /* @__PURE__ */ new Date())));
+    if (otp) {
+      await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
+    }
+    return otp;
+  },
+  // Purpose-aware variants. `purpose` separates sign-up codes from
+  // password-reset codes so one cannot be replayed for the other.
+  async createOtpFor(opts) {
+    const expiresAt = new Date(Date.now() + (opts.ttlMinutes ?? 5) * 60 * 1e3);
+    const [otp] = await db.insert(otpCodes).values({
+      phone: opts.phone ?? null,
+      email: opts.email ?? null,
+      code: opts.code,
+      purpose: opts.purpose,
+      expiresAt
+    }).returning();
+    return otp;
+  },
+  async getRecentValidOtpFor(phone, purpose) {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1e3);
+    const [otp] = await db.select().from(otpCodes).where(and(
+      eq(otpCodes.phone, phone),
+      eq(otpCodes.purpose, purpose),
+      eq(otpCodes.used, false),
+      gte(otpCodes.expiresAt, /* @__PURE__ */ new Date()),
+      gte(otpCodes.createdAt, twoMinutesAgo)
+    )).orderBy(desc(otpCodes.createdAt)).limit(1);
+    return otp;
+  },
+  async verifyOtpFor(phone, code, purpose) {
+    const [otp] = await db.select().from(otpCodes).where(and(
+      eq(otpCodes.phone, phone),
+      eq(otpCodes.code, code),
+      eq(otpCodes.purpose, purpose),
+      eq(otpCodes.used, false),
+      gte(otpCodes.expiresAt, /* @__PURE__ */ new Date())
+    )).orderBy(desc(otpCodes.createdAt)).limit(1);
+    if (otp) {
+      await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
+    }
+    return otp;
+  },
+  async getRecentValidOtpForEmail(email, purpose) {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1e3);
+    const [otp] = await db.select().from(otpCodes).where(and(
+      eq(otpCodes.email, email),
+      eq(otpCodes.purpose, purpose),
+      eq(otpCodes.used, false),
+      gte(otpCodes.expiresAt, /* @__PURE__ */ new Date()),
+      gte(otpCodes.createdAt, twoMinutesAgo)
+    )).orderBy(desc(otpCodes.createdAt)).limit(1);
+    return otp;
+  },
+  async verifyOtpForEmail(email, code, purpose) {
+    const [otp] = await db.select().from(otpCodes).where(and(
+      eq(otpCodes.email, email),
+      eq(otpCodes.code, code),
+      eq(otpCodes.purpose, purpose),
+      eq(otpCodes.used, false),
+      gte(otpCodes.expiresAt, /* @__PURE__ */ new Date())
+    )).orderBy(desc(otpCodes.createdAt)).limit(1);
     if (otp) {
       await db.update(otpCodes).set({ used: true }).where(eq(otpCodes.id, otp.id));
     }
@@ -1021,6 +1134,10 @@ var storage = {
     const [promo] = await db.select().from(promoCodes).where(and(eq(promoCodes.code, code.toUpperCase()), eq(promoCodes.isActive, true)));
     return promo;
   },
+  async getPromoById(id) {
+    const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.id, id));
+    return promo;
+  },
   async createPromoCode(data) {
     const promoData = { ...data, code: data.code.toUpperCase() };
     if (promoData.expiresAt && typeof promoData.expiresAt === "string") promoData.expiresAt = new Date(promoData.expiresAt);
@@ -1035,6 +1152,47 @@ var storage = {
   },
   async incrementPromoUsed(id) {
     await db.update(promoCodes).set({ usedCount: sql2`${promoCodes.usedCount} + 1` }).where(eq(promoCodes.id, id));
+  },
+  async hasUserRedeemedPromo(promoCodeId, userId) {
+    const [redemption] = await db.select({ id: promoRedemptions.id }).from(promoRedemptions).where(and(eq(promoRedemptions.promoCodeId, promoCodeId), eq(promoRedemptions.userId, userId))).limit(1);
+    return Boolean(redemption);
+  },
+  // Claims one unique-user redemption and increments usedCount in one transaction.
+  // The unique index prevents the same user from redeeming concurrently twice.
+  async redeemPromoCode(id, userId) {
+    try {
+      return await db.transaction(async (tx) => {
+        const [redemption] = await tx.insert(promoRedemptions).values({ promoCodeId: id, userId }).onConflictDoNothing({ target: [promoRedemptions.promoCodeId, promoRedemptions.userId] }).returning();
+        if (!redemption) throw new Error("PROMO_ALREADY_USED");
+        const [promo] = await tx.update(promoCodes).set({ usedCount: sql2`${promoCodes.usedCount} + 1` }).where(and(
+          eq(promoCodes.id, id),
+          eq(promoCodes.isActive, true),
+          or(isNull(promoCodes.maxUses), sql2`${promoCodes.usedCount} < ${promoCodes.maxUses}`)
+        )).returning();
+        if (!promo) throw new Error("PROMO_EXHAUSTED");
+        return { promo, redemptionId: redemption.id };
+      });
+    } catch (error) {
+      if (error?.message === "PROMO_ALREADY_USED") return { error: "already_used" };
+      if (error?.message === "PROMO_EXHAUSTED") return { error: "exhausted" };
+      throw error;
+    }
+  },
+  async attachPromoRedemption(redemptionId, orderId) {
+    await db.update(promoRedemptions).set({ orderId }).where(eq(promoRedemptions.id, redemptionId));
+  },
+  // Gives the unique-user claim and global use back when order storage fails.
+  async releasePromoUse(id, userId) {
+    await db.transaction(async (tx) => {
+      const [redemption] = await tx.delete(promoRedemptions).where(and(
+        eq(promoRedemptions.promoCodeId, id),
+        eq(promoRedemptions.userId, userId),
+        isNull(promoRedemptions.orderId)
+      )).returning({ id: promoRedemptions.id });
+      if (redemption) {
+        await tx.update(promoCodes).set({ usedCount: sql2`GREATEST(${promoCodes.usedCount} - 1, 0)` }).where(eq(promoCodes.id, id));
+      }
+    });
   },
   // ───── SUBSCRIPTIONS ─────
   async getSubscriptionPlans() {
@@ -1096,6 +1254,27 @@ var storage = {
   async setSetting(key, value) {
     await db.insert(settings).values({ key, value }).onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: /* @__PURE__ */ new Date() } });
   },
+  // ───── CONTENT PAGES ─────
+  async getContentPages(activeOnly = false) {
+    const q = db.select().from(contentPages);
+    const rows = activeOnly ? await q.where(eq(contentPages.isActive, true)).orderBy(asc(contentPages.sortOrder)) : await q.orderBy(asc(contentPages.sortOrder));
+    return rows;
+  },
+  async getContentPage(slug, activeOnly = true) {
+    const conditions = [eq(contentPages.slug, String(slug || "").toLowerCase())];
+    if (activeOnly) conditions.push(eq(contentPages.isActive, true));
+    const [page] = await db.select().from(contentPages).where(and(...conditions));
+    return page;
+  },
+  async createContentPage(data) {
+    const [page] = await db.insert(contentPages).values(data).returning();
+    return page;
+  },
+  async updateContentPage(slug, data) {
+    const patch = { ...data, updatedAt: /* @__PURE__ */ new Date() };
+    const [page] = await db.update(contentPages).set(patch).where(eq(contentPages.slug, String(slug || "").toLowerCase())).returning();
+    return page;
+  },
   // ───── SAVED RECIPIENTS ─────
   async getSavedRecipients(userId) {
     return db.select().from(savedRecipients).where(eq(savedRecipients.userId, userId));
@@ -1116,7 +1295,7 @@ import { eq as eq2 } from "drizzle-orm";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg2 from "pg";
-import crypto from "crypto";
+import crypto2 from "crypto";
 
 // server/whatsapp.ts
 var GRAPH_API_URL = "https://graph.facebook.com/v21.0";
@@ -1314,15 +1493,160 @@ function renderReceiptHtml(order) {
 </html>`;
 }
 
+// server/password.ts
+import crypto from "crypto";
+var KEY_LENGTH = 64;
+var PREFIX = "scrypt";
+var MIN_PASSWORD_LENGTH = 6;
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.scryptSync(password, salt, KEY_LENGTH);
+  return `${PREFIX}$${salt.toString("hex")}$${derived.toString("hex")}`;
+}
+function verifyPassword(password, stored) {
+  if (!stored) return false;
+  const parts = stored.split("$");
+  if (parts.length !== 3 || parts[0] !== PREFIX) return false;
+  const salt = Buffer.from(parts[1], "hex");
+  const expected = Buffer.from(parts[2], "hex");
+  if (!salt.length || !expected.length) return false;
+  const derived = crypto.scryptSync(password, salt, expected.length);
+  if (derived.length !== expected.length) return false;
+  return crypto.timingSafeEqual(derived, expected);
+}
+function validatePasswordStrength(password) {
+  if (typeof password !== "string" || !password) return "Password is required";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  }
+  return null;
+}
+function otpLength() {
+  const raw = Number(process.env.OTP_LENGTH);
+  return Number.isInteger(raw) && raw >= 4 && raw <= 8 ? raw : 6;
+}
+function generateNumericCode(length = otpLength()) {
+  let out = "";
+  while (out.length < length) {
+    out += crypto.randomInt(0, 10).toString();
+  }
+  return out;
+}
+
+// server/mailer.ts
+import nodemailer from "nodemailer";
+var SMTP_HOST = process.env.SMTP_HOST;
+var SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+var SMTP_USER = process.env.SMTP_USER;
+var SMTP_PASS = process.env.SMTP_PASS;
+var SMTP_SECURE = process.env.SMTP_SECURE === "true" || SMTP_PORT === 465;
+var API_URL = process.env.EMAIL_API_URL;
+var API_KEY = process.env.EMAIL_API_KEY;
+var FROM = process.env.EMAIL_FROM || "Nyluver <no-reply@nyluver.com>";
+var transporter = null;
+function isSmtpConfigured() {
+  return !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
+}
+function isApiConfigured() {
+  return !!(API_URL && API_KEY);
+}
+function isEmailConfigured() {
+  return isSmtpConfigured() || isApiConfigured();
+}
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS }
+    });
+  }
+  return transporter;
+}
+async function sendEmail(to, subject, html, text2) {
+  if (!isEmailConfigured()) {
+    console.warn(`[Email] Not configured - "${subject}" for ${to} was not delivered`);
+    return { success: false, error: "not_configured" };
+  }
+  try {
+    if (isSmtpConfigured()) {
+      const info = await getTransporter().sendMail({ from: FROM, to, subject, html, text: text2 });
+      console.log(`[Email] Sent "${subject}" to ${to} (${info.messageId})`);
+      return { success: true };
+    }
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ from: FROM, to: [to], subject, html, text: text2 })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      console.error(`[Email ERROR] ${response.status}: ${detail}`);
+      return { success: false, error: detail.slice(0, 200) };
+    }
+    console.log(`[Email] Sent "${subject}" to ${to}`);
+    return { success: true };
+  } catch (error) {
+    console.error(`[Email ERROR] ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+var CODE_COPY = {
+  register: {
+    subject: "Your Nyluver verification code",
+    lead: "Welcome to Nyluver. Use this code to confirm your account."
+  },
+  password_reset: {
+    subject: "Reset your Nyluver password",
+    lead: "Use this code to reset your password."
+  },
+  login: {
+    subject: "Your Nyluver verification code",
+    lead: "Use this code to sign in."
+  }
+};
+async function sendVerificationCodeEmail(to, code, purpose) {
+  const copy = CODE_COPY[purpose] || CODE_COPY.login;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+      <h2 style="color:#2F4538;margin:0 0 8px">Nyluver</h2>
+      <p style="color:#5B6B60;margin:0 0 24px">${copy.lead}</p>
+      <div style="background:#F4F1EA;border-radius:12px;padding:20px;text-align:center">
+        <span style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#2F4538">${code}</span>
+      </div>
+      <p style="color:#8A968C;font-size:13px;margin-top:24px">This code expires in 5 minutes. If you did not request it, you can ignore this email.</p>
+    </div>`;
+  const text2 = `${copy.lead}
+
+Code: ${code}
+
+This code expires in 5 minutes.`;
+  return sendEmail(to, copy.subject, html, text2);
+}
+async function deliverVerificationCode(opts) {
+  console.log(`[VERIFY] ${opts.purpose} code for ${opts.email}: ${opts.code}`);
+  if (!isEmailConfigured()) {
+    return { email: false };
+  }
+  const sent = await sendVerificationCodeEmail(opts.email, opts.code, opts.purpose);
+  return { email: sent.success };
+}
+
 // server/routes.ts
 var PgSession = connectPgSimple(session);
 var sessionPool = new pg2.Pool({ connectionString: process.env.DATABASE_URL });
+var OTP_TTL_SECONDS = 5 * 60;
+var OTP_RESEND_AFTER_SECONDS = 60;
 function generateOtp() {
   if (process.env.DEFAULT_OTP) return process.env.DEFAULT_OTP;
-  return Math.floor(1e5 + Math.random() * 9e5).toString();
+  return generateNumericCode(otpLength());
 }
 function generateToken() {
-  return crypto.randomBytes(32).toString("hex");
+  return crypto2.randomBytes(32).toString("hex");
 }
 var tokenStore = /* @__PURE__ */ new Map();
 function adminAuth(req, res, next) {
@@ -1331,6 +1655,37 @@ function adminAuth(req, res, next) {
     return res.status(401).json({ error: "Admin access required" });
   }
   next();
+}
+function normalizePhone(phone) {
+  let clean = String(phone).trim().replace(/[\s\-()]/g, "");
+  if (!clean.startsWith("+")) {
+    if (clean.startsWith("218")) clean = "+" + clean;
+    else if (clean.startsWith("0")) clean = "+218" + clean.slice(1);
+    else clean = "+218" + clean;
+  }
+  return clean;
+}
+function normalizeEmail(email) {
+  return String(email).trim().toLowerCase();
+}
+function publicUser(user) {
+  return {
+    id: user.id,
+    name: user.nameEn,
+    email: user.email,
+    phone: user.phone,
+    hasPassword: !!user.passwordHash
+  };
+}
+function revokeUserTokens(userId) {
+  for (const [token, id] of tokenStore.entries()) {
+    if (id === userId) tokenStore.delete(token);
+  }
+}
+function issueToken(userId) {
+  const token = generateToken();
+  tokenStore.set(token, userId);
+  return token;
 }
 function customerAuth(req, res, next) {
   const sess = req.session;
@@ -1360,6 +1715,77 @@ async function appAuth(req, res, next) {
     return res.status(401).json({ error: "Authentication failed" });
   }
 }
+function withDefaultMaxUses(body) {
+  const data = { ...body || {} };
+  const raw = data.maxUses;
+  const num = raw === null || raw === void 0 || raw === "" ? NaN : Number(raw);
+  data.maxUses = Number.isFinite(num) && num > 0 ? Math.trunc(num) : 1;
+  return data;
+}
+function promoRefsFromBody(body) {
+  const b = body || {};
+  const nested = b.promo && typeof b.promo === "object" ? b.promo : null;
+  const raw = [
+    b.promoCodeId,
+    b.promoId,
+    nested && nested.id,
+    b.promoCode,
+    b.code,
+    b.promoCodeValue,
+    typeof b.promo === "string" ? b.promo : null,
+    nested && nested.code
+  ];
+  return raw.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim());
+}
+async function redeemPromoForOrder(opts) {
+  const refs = promoRefsFromBody(opts.body);
+  if (!refs.length) return null;
+  let promo = null;
+  for (const ref of refs) {
+    promo = await storage.getPromoById(ref);
+    if (!promo) promo = await storage.getPromoByCode(ref);
+    if (promo) break;
+  }
+  if (!promo || !promo.isActive) return { error: "Invalid code", status: 404 };
+  if (promo.maxUses && promo.usedCount >= promo.maxUses) return { error: "Code exhausted", status: 400 };
+  if (promo.expiresAt && new Date(promo.expiresAt) < /* @__PURE__ */ new Date()) return { error: "Code expired", status: 400 };
+  if (promo.minOrderAmount && opts.orderAmount < parseFloat(promo.minOrderAmount)) {
+    return { error: `Minimum order ${promo.minOrderAmount}`, status: 400 };
+  }
+  if (promo.isFirstOrderOnly && opts.userId) {
+    const orderCount = await storage.getUserOrderCount(opts.userId);
+    if (orderCount > 0) return { error: "Valid on first order only", status: 400 };
+  }
+  if (promo.categoryId && Array.isArray(opts.categoryIds) && !opts.categoryIds.includes(promo.categoryId)) {
+    return { error: "Promo not applicable to items in cart", status: 400 };
+  }
+  let discount = promo.type === "percentage" ? opts.orderAmount * parseFloat(promo.value) / 100 : parseFloat(promo.value);
+  if (!Number.isFinite(discount) || discount < 0) discount = 0;
+  if (discount > opts.orderAmount) discount = opts.orderAmount;
+  const redeemed = await storage.redeemPromoCode(promo.id, opts.userId);
+  if (redeemed.error === "already_used") return { error: "Promo code already used by this user", status: 400 };
+  if (redeemed.error === "exhausted") return { error: "Code exhausted", status: 400 };
+  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: Math.round(discount * 100) / 100 };
+}
+function reconcileDiscount(body, serverDiscount) {
+  const num = (v) => {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const clientDiscount = num(body?.discount);
+  const clientTotal = num(body?.total);
+  const subtotal = num(body?.subtotal);
+  const fees = num(body?.deliveryFee) + num(body?.expressFee) + num(body?.vatAmount);
+  const appliedDiscount = serverDiscount;
+  let finalTotal = clientTotal + clientDiscount - serverDiscount;
+  let source = "client";
+  if (subtotal > 0 && Math.abs(clientTotal + clientDiscount - (subtotal + fees)) > 0.01) {
+    finalTotal = subtotal + fees - serverDiscount;
+    source = "components";
+  }
+  if (finalTotal < 0) finalTotal = 0;
+  return { clientDiscount, appliedDiscount, finalTotal: Math.round(finalTotal * 100) / 100, source };
+}
 function registerRoutes(app2) {
   app2.use(session({
     secret: process.env.SESSION_SECRET || "nyluver-secret-key",
@@ -1382,147 +1808,221 @@ function registerRoutes(app2) {
   }));
   app2.post("/api/auth/register/send-otp", async (req, res) => {
     try {
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim()) {
         return res.status(400).json({ error: "Name, email, and phone are required" });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, "");
-      if (!cleanPhone.startsWith("+")) {
-        if (cleanPhone.startsWith("218")) cleanPhone = "+" + cleanPhone;
-        else if (cleanPhone.startsWith("0")) cleanPhone = "+218" + cleanPhone.slice(1);
-        else cleanPhone = "+218" + cleanPhone;
+      if (password !== void 0 && password !== null && password !== "") {
+        const strengthError = validatePasswordStrength(password);
+        if (strengthError) return res.status(400).json({ error: "weak_password", message: strengthError });
       }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: "phone_taken", message: "An account with this phone number already exists" });
       }
-      const existingOtp = await storage.getRecentValidOtp(cleanPhone);
-      if (existingOtp) {
-        console.log(`[REGISTRATION] Reusing recent code for ${cleanPhone}`);
-        return res.json({ success: true, phone: cleanPhone });
+      const existing = await storage.getRecentValidOtpForEmail(cleanEmail, "register");
+      let emailSent = true;
+      if (!existing) {
+        const code = generateOtp();
+        await storage.createOtpFor({ email: cleanEmail, phone: cleanPhone, code, purpose: "register" });
+        const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: "register" });
+        emailSent = result.email;
       }
-      const code = generateOtp();
-      await storage.createOtp(cleanPhone, code);
-      console.log(`[REGISTRATION] OTP code for ${cleanPhone}: ${code}`);
-      if (!process.env.DEFAULT_OTP) {
-        const result = await sendOtp(cleanPhone, code);
-        if (!result.success) {
-          console.warn(`[REGISTRATION] WhatsApp delivery failed for ${cleanPhone}. Code is in server logs.`);
-        }
-      }
-      res.json({ success: true, phone: cleanPhone });
+      res.json({
+        success: true,
+        email: cleanEmail,
+        purpose: "register",
+        emailSent,
+        expiresInSeconds: OTP_TTL_SECONDS,
+        resendAfterSeconds: OTP_RESEND_AFTER_SECONDS
+      });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
   app2.post("/api/auth/register/verify", async (req, res) => {
     try {
-      const { name, email, phone, code } = req.body;
+      const { name, email, phone, code, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim() || !code?.trim()) {
         return res.status(400).json({ error: "All fields including verification code are required" });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, "");
-      if (!cleanPhone.startsWith("+")) {
-        if (cleanPhone.startsWith("218")) cleanPhone = "+" + cleanPhone;
-        else if (cleanPhone.startsWith("0")) cleanPhone = "+218" + cleanPhone.slice(1);
-        else cleanPhone = "+218" + cleanPhone;
-      }
-      const otp = await storage.verifyOtp(cleanPhone, code.trim());
+      const strengthError = validatePasswordStrength(password);
+      if (strengthError) return res.status(400).json({ error: "weak_password", message: strengthError });
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+      const otp = await storage.verifyOtpForEmail(cleanEmail, String(code).trim(), "register");
       if (!otp) {
-        return res.status(400).json({ error: "invalid_otp", message: "Invalid or expired verification code" });
+        return res.status(400).json({ error: "invalid_code", message: "Invalid or expired verification code" });
       }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: "phone_taken", message: "An account with this phone number already exists" });
       }
       const user = await storage.createUser({
         nameEn: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         phone: cleanPhone,
+        passwordHash: hashPassword(password),
         role: "customer",
         language: "en"
       });
-      const token = generateToken();
-      tokenStore.set(token, user.id);
-      res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token
-      });
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
   app2.post("/api/auth/register", async (req, res) => {
     try {
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim()) {
         return res.status(400).json({ error: "Name, email, and phone are required" });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, "");
-      if (!cleanPhone.startsWith("+")) {
-        if (cleanPhone.startsWith("218")) cleanPhone = "+" + cleanPhone;
-        else if (cleanPhone.startsWith("0")) cleanPhone = "+218" + cleanPhone.slice(1);
-        else cleanPhone = "+218" + cleanPhone;
-      }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+      const strengthError = validatePasswordStrength(password);
+      if (strengthError) return res.status(400).json({ error: "weak_password", message: strengthError });
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: "phone_taken", message: "An account with this phone number already exists" });
       }
       const user = await storage.createUser({
         nameEn: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         phone: cleanPhone,
+        passwordHash: hashPassword(password),
         role: "customer",
         language: "en"
       });
-      const token = generateToken();
-      tokenStore.set(token, user.id);
-      res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token
-      });
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
   app2.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, phone } = req.body;
-      if (!email?.trim() || !phone?.trim()) {
-        return res.status(400).json({ error: "Email and phone are required" });
-      }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, "");
-      if (!cleanPhone.startsWith("+")) {
-        if (cleanPhone.startsWith("218")) cleanPhone = "+" + cleanPhone;
-        else if (cleanPhone.startsWith("0")) cleanPhone = "+218" + cleanPhone.slice(1);
-        else cleanPhone = "+218" + cleanPhone;
-      }
-      const user = await storage.getUserByEmailAndPhone(email.trim().toLowerCase(), cleanPhone);
-      if (!user) {
-        return res.status(401).json({ error: "no_match", message: "No account found with that email and phone combination" });
+      const { email, phone, password } = req.body || {};
+      const cleanEmail = email?.trim() ? normalizeEmail(email) : "";
+      const cleanPhone = phone?.trim() ? normalizePhone(phone) : "";
+      let user;
+      if (password) {
+        if (!cleanEmail && !cleanPhone) {
+          return res.status(400).json({ error: "Email or phone is required" });
+        }
+        user = cleanEmail ? await storage.getUserByEmail(cleanEmail) : await storage.getUserByPhone(cleanPhone);
+        if (!user || !verifyPassword(password, user.passwordHash)) {
+          return res.status(401).json({ error: "invalid_credentials", message: "Incorrect email or password" });
+        }
+      } else {
+        if (!cleanEmail || !cleanPhone) {
+          return res.status(400).json({ error: "Email and phone are required" });
+        }
+        user = await storage.getUserByEmailAndPhone(cleanEmail, cleanPhone);
+        if (!user) {
+          return res.status(401).json({ error: "no_match", message: "No account found with that email and phone combination" });
+        }
       }
       if (user.isBlacklisted) {
         return res.status(403).json({ error: "blocked", message: "This account has been suspended" });
       }
       await db.update(users).set({ lastLoginAt: /* @__PURE__ */ new Date() }).where(eq2(users.id, user.id));
-      const token = generateToken();
-      tokenStore.set(token, user.id);
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
+      const cleanEmail = normalizeEmail(email);
+      const user = await storage.getUserByEmail(cleanEmail);
+      let emailSent = false;
+      if (user) {
+        const existing = await storage.getRecentValidOtpForEmail(cleanEmail, "password_reset");
+        if (!existing) {
+          const code = generateOtp();
+          await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: "password_reset" });
+          const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: "password_reset" });
+          emailSent = result.email;
+        }
+      } else {
+        console.warn(`[AUTH] Password reset requested for unknown email: ${cleanEmail}`);
+      }
       res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token
+        success: true,
+        email: cleanEmail,
+        purpose: "password_reset",
+        emailSent,
+        expiresInSeconds: OTP_TTL_SECONDS,
+        resendAfterSeconds: OTP_RESEND_AFTER_SECONDS
       });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/auth/resend-otp", async (req, res) => {
+    try {
+      const { email, purpose } = req.body || {};
+      if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
+      const cleanEmail = normalizeEmail(email);
+      const codePurpose = purpose === "password_reset" ? "password_reset" : "register";
+      const user = await storage.getUserByEmail(cleanEmail);
+      if (codePurpose === "register" && user) {
+        return res.status(409).json({ error: "email_taken", message: "An account with this email already exists" });
+      }
+      if (codePurpose === "password_reset" && !user) {
+        return res.status(400).json({ error: "invalid_email", message: "No account found with this email" });
+      }
+      const code = generateOtp();
+      await storage.createOtpFor({ email: cleanEmail, phone: user?.phone ?? null, code, purpose: codePurpose });
+      const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: codePurpose });
+      res.json({ success: true, email: cleanEmail, purpose: codePurpose, emailSent: result.email });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { email, code, newPassword, password } = req.body || {};
+      const nextPassword = newPassword ?? password;
+      if (!email?.trim() || !code?.trim()) {
+        return res.status(400).json({ error: "Email and verification code are required" });
+      }
+      const strengthError = validatePasswordStrength(nextPassword);
+      if (strengthError) return res.status(400).json({ error: "weak_password", message: strengthError });
+      const cleanEmail = normalizeEmail(email);
+      const user = await storage.getUserByEmail(cleanEmail);
+      const otp = user ? await storage.verifyOtpForEmail(cleanEmail, String(code).trim(), "password_reset") : null;
+      if (!otp) {
+        return res.status(400).json({ error: "invalid_code", message: "Invalid or expired verification code" });
+      }
+      await storage.setUserPassword(user.id, hashPassword(nextPassword));
+      revokeUserTokens(user.id);
+      res.json({ success: true, message: "Password updated. Please sign in." });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/auth/change-password", appAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body || {};
+      const user = req.appUser;
+      if (!verifyPassword(currentPassword, user.passwordHash)) {
+        return res.status(401).json({ error: "invalid_credentials", message: "Current password is incorrect" });
+      }
+      const strengthError = validatePasswordStrength(newPassword);
+      if (strengthError) return res.status(400).json({ error: "weak_password", message: strengthError });
+      await storage.setUserPassword(user.id, hashPassword(newPassword));
+      revokeUserTokens(user.id);
+      res.json({ success: true, token: issueToken(user.id) });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -1692,6 +2192,22 @@ function registerRoutes(app2) {
       res.status(500).json({ error: e.message });
     }
   });
+  app2.get("/api/content", async (_req, res) => {
+    try {
+      res.json(await storage.getContentPages(true));
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.get("/api/content/:slug", async (req, res) => {
+    try {
+      const page = await storage.getContentPage(req.params.slug);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      res.json(page);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
   app2.get("/api/slots/:cityId/:date", async (req, res) => {
     try {
       const slots = await storage.ensureSlots(req.params.cityId, req.params.date);
@@ -1724,6 +2240,9 @@ function registerRoutes(app2) {
         const orderCount = await storage.getUserOrderCount(userId);
         if (orderCount > 0) return res.status(400).json({ error: "Valid on first order only" });
       }
+      if (userId && await storage.hasUserRedeemedPromo(promo.id, userId)) {
+        return res.status(400).json({ error: "Promo code already used by this user" });
+      }
       if (promo.categoryId && Array.isArray(categoryIds) && !categoryIds.includes(promo.categoryId)) {
         return res.status(400).json({ error: "Promo not applicable to items in cart" });
       }
@@ -1737,31 +2256,48 @@ function registerRoutes(app2) {
   app2.post("/api/orders", customerAuth, async (req, res) => {
     try {
       const sess = req.session;
-      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress, promoCodeId } = req.body;
-      const order = await storage.createOrder({
-        userId: sess.userId,
-        recipientName,
-        recipientPhone,
-        address,
-        cityId,
-        slotId,
-        slotDate,
-        slotTime,
-        cardMessage,
-        paymentMethod,
-        subtotal: subtotal.toString(),
-        deliveryFee: deliveryFee.toString(),
-        expressFee: expressFee.toString(),
-        discount: discount.toString(),
-        vatAmount: vatAmount.toString(),
-        total: total.toString(),
-        totalUSD: totalUSD?.toString(),
-        isExpress,
-        promoCodeId,
-        status: "paid"
-      }, items);
+      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress } = req.body;
+      const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
+      const promoResult = await redeemPromoForOrder({ body: req.body, orderAmount, userId: sess.userId, categoryIds: req.body.categoryIds });
+      if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0);
+      if (!promoResult && clientDiscount > 0) {
+        console.warn("[promo] /api/orders got a discount without any promo reference. body keys: " + Object.keys(req.body || {}).join(","));
+      }
+      if (source === "components") {
+        console.warn("[promo] /api/orders total rebuilt from order components (client total/discount were inconsistent).");
+      }
+      let order;
+      try {
+        order = await storage.createOrder({
+          userId: sess.userId,
+          recipientName,
+          recipientPhone,
+          address,
+          cityId,
+          slotId,
+          slotDate,
+          slotTime,
+          cardMessage,
+          paymentMethod,
+          subtotal: (subtotal ?? total ?? 0).toString(),
+          deliveryFee: deliveryFee.toString(),
+          expressFee: expressFee.toString(),
+          discount: appliedDiscount.toString(),
+          vatAmount: vatAmount.toString(),
+          total: finalTotal.toString(),
+          totalUSD: totalUSD?.toString(),
+          isExpress,
+          promoCodeId: promoResult ? promoResult.promo.id : null,
+          status: "paid"
+        }, items);
+      } catch (err) {
+        if (promoResult) await storage.releasePromoUse(promoResult.promo.id, sess.userId).catch(() => {
+        });
+        throw err;
+      }
+      if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
       if (slotId) await storage.incrementSlotUsed(slotId);
-      if (promoCodeId) await storage.incrementPromoUsed(promoCodeId);
       const loyaltyConfig2 = await storage.getLoyaltyConfig();
       if (loyaltyConfig2) {
         const points = Math.floor(total * parseFloat(loyaltyConfig2.earnValue) / 100);
@@ -1793,26 +2329,45 @@ function registerRoutes(app2) {
       const { items, recipientName, recipientPhone, address, cityId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, total, totalUSD, isExpress } = req.body;
       const defaultCity = await storage.getCities().then((cities2) => cities2[0]);
       const resolvedCityId = cityId || defaultCity?.id;
-      const order = await storage.createOrder({
-        userId: user.id,
-        recipientName,
-        recipientPhone,
-        address,
-        cityId: resolvedCityId,
-        slotDate: slotDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
-        slotTime: slotTime || "10:00-13:00",
-        cardMessage: cardMessage || "",
-        paymentMethod: paymentMethod || "card",
-        subtotal: (subtotal || total || 0).toString(),
-        deliveryFee: (deliveryFee || 0).toString(),
-        expressFee: (expressFee || 0).toString(),
-        discount: (discount || 0).toString(),
-        vatAmount: "0",
-        total: (total || 0).toString(),
-        totalUSD: totalUSD?.toString(),
-        isExpress: isExpress || false,
-        status: "paid"
-      }, items);
+      const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
+      const promoResult = await redeemPromoForOrder({ body: req.body, orderAmount, userId: user.id, categoryIds: req.body.categoryIds });
+      if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0);
+      if (!promoResult && clientDiscount > 0) {
+        console.warn("[promo] /api/orders/app got a discount without any promo reference. body keys: " + Object.keys(req.body || {}).join(","));
+      }
+      if (source === "components") {
+        console.warn("[promo] /api/orders/app total rebuilt from order components (client total/discount were inconsistent).");
+      }
+      let order;
+      try {
+        order = await storage.createOrder({
+          userId: user.id,
+          recipientName,
+          recipientPhone,
+          address,
+          cityId: resolvedCityId,
+          slotDate: slotDate || (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+          slotTime: slotTime || "10:00-13:00",
+          cardMessage: cardMessage || "",
+          paymentMethod: paymentMethod || "card",
+          subtotal: (subtotal || total || 0).toString(),
+          deliveryFee: (deliveryFee || 0).toString(),
+          expressFee: (expressFee || 0).toString(),
+          discount: appliedDiscount.toString(),
+          vatAmount: "0",
+          total: finalTotal.toString(),
+          totalUSD: totalUSD?.toString(),
+          isExpress: isExpress || false,
+          promoCodeId: promoResult ? promoResult.promo.id : null,
+          status: "paid"
+        }, items);
+      } catch (err) {
+        if (promoResult) await storage.releasePromoUse(promoResult.promo.id, user.id).catch(() => {
+        });
+        throw err;
+      }
+      if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
       if (user.phone) {
         sendOrderConfirmation(user.phone, order.orderNumber).catch((e) => console.error("[WhatsApp] Order confirmation failed:", e.message));
       }
@@ -2147,14 +2702,14 @@ function registerRoutes(app2) {
   });
   app2.post("/api/admin/promos", adminAuth, async (req, res) => {
     try {
-      res.json(await storage.createPromoCode(req.body));
+      res.json(await storage.createPromoCode(withDefaultMaxUses(req.body)));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
   app2.put("/api/admin/promos/:id", adminAuth, async (req, res) => {
     try {
-      res.json(await storage.updatePromoCode(req.params.id, req.body));
+      res.json(await storage.updatePromoCode(req.params.id, withDefaultMaxUses(req.body)));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -2411,9 +2966,54 @@ function registerRoutes(app2) {
       res.status(500).json({ error: e.message });
     }
   });
+  app2.get("/api/admin/content", adminAuth, async (_req, res) => {
+    try {
+      res.json(await storage.getContentPages());
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/admin/content", adminAuth, async (req, res) => {
+    try {
+      const { slug, titleEn, titleAr, bodyEn, bodyAr, contactPhone, contactEmail, contactWhatsapp, sortOrder, isActive } = req.body;
+      if (!slug?.trim()) return res.status(400).json({ error: "Slug is required" });
+      if (!titleEn?.trim() || !titleAr?.trim()) return res.status(400).json({ error: "English and Arabic titles are required" });
+      const already = await storage.getContentPage(slug, false);
+      if (already) return res.status(409).json({ error: "A page with this slug already exists" });
+      const page = await storage.createContentPage({
+        slug: slug.trim().toLowerCase(),
+        titleEn,
+        titleAr,
+        bodyEn: bodyEn || "",
+        bodyAr: bodyAr || "",
+        contactPhone: contactPhone || null,
+        contactEmail: contactEmail || null,
+        contactWhatsapp: contactWhatsapp || null,
+        sortOrder: sortOrder ?? 0,
+        isActive: isActive !== false
+      });
+      res.json(page);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.put("/api/admin/content/:slug", adminAuth, async (req, res) => {
+    try {
+      const patch = {};
+      ["titleEn", "titleAr", "bodyEn", "bodyAr", "contactPhone", "contactEmail", "contactWhatsapp", "sortOrder", "isActive"].forEach((k) => {
+        if (req.body[k] !== void 0) patch[k] = req.body[k];
+      });
+      const page = await storage.updateContentPage(req.params.slug, patch);
+      if (!page) return res.status(404).json({ error: "Page not found" });
+      res.json(page);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
 }
 
 // server/index.ts
+init_db();
 import * as fs from "fs";
 import * as path from "path";
 var app = express();
@@ -2579,6 +3179,7 @@ function setupErrorHandler(app2) {
     }
     next();
   });
+  await ensureSchema();
   const { seedDatabase: seedDatabase2 } = await Promise.resolve().then(() => (init_seed(), seed_exports));
   await seedDatabase2();
   setupErrorHandler(app);

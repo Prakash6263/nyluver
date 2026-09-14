@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, desc, asc, and, sql, ilike, gte, lte, or, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, sql, ilike, gte, lte, or, inArray, isNull } from "drizzle-orm";
 import * as s from "@shared/schema";
 
 export const storage = {
@@ -48,6 +48,10 @@ export const storage = {
     const [user] = await db.update(s.users).set(data).where(eq(s.users.id, id)).returning();
     return user;
   },
+  async setUserPassword(userId: string, passwordHash: string) {
+    const [user] = await db.update(s.users).set({ passwordHash }).where(eq(s.users.id, userId)).returning();
+    return user;
+  },
   async getUserCount() {
     const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(s.users);
     return result.count;
@@ -75,6 +79,84 @@ export const storage = {
   async verifyOtp(phone: string, code: string) {
     const [otp] = await db.select().from(s.otpCodes)
       .where(and(eq(s.otpCodes.phone, phone), eq(s.otpCodes.code, code), eq(s.otpCodes.used, false), gte(s.otpCodes.expiresAt, new Date())));
+    if (otp) {
+      await db.update(s.otpCodes).set({ used: true }).where(eq(s.otpCodes.id, otp.id));
+    }
+    return otp;
+  },
+
+  // Purpose-aware variants. `purpose` separates sign-up codes from
+  // password-reset codes so one cannot be replayed for the other.
+  async createOtpFor(opts: { phone?: string | null; email?: string | null; code: string; purpose: string; ttlMinutes?: number }) {
+    const expiresAt = new Date(Date.now() + (opts.ttlMinutes ?? 5) * 60 * 1000);
+    const [otp] = await db.insert(s.otpCodes).values({
+      phone: opts.phone ?? null,
+      email: opts.email ?? null,
+      code: opts.code,
+      purpose: opts.purpose,
+      expiresAt,
+    }).returning();
+    return otp;
+  },
+
+  async getRecentValidOtpFor(phone: string, purpose: string) {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const [otp] = await db.select().from(s.otpCodes)
+      .where(and(
+        eq(s.otpCodes.phone, phone),
+        eq(s.otpCodes.purpose, purpose),
+        eq(s.otpCodes.used, false),
+        gte(s.otpCodes.expiresAt, new Date()),
+        gte(s.otpCodes.createdAt, twoMinutesAgo)
+      ))
+      .orderBy(desc(s.otpCodes.createdAt))
+      .limit(1);
+    return otp;
+  },
+
+  async verifyOtpFor(phone: string, code: string, purpose: string) {
+    const [otp] = await db.select().from(s.otpCodes)
+      .where(and(
+        eq(s.otpCodes.phone, phone),
+        eq(s.otpCodes.code, code),
+        eq(s.otpCodes.purpose, purpose),
+        eq(s.otpCodes.used, false),
+        gte(s.otpCodes.expiresAt, new Date())
+      ))
+      .orderBy(desc(s.otpCodes.createdAt))
+      .limit(1);
+    if (otp) {
+      await db.update(s.otpCodes).set({ used: true }).where(eq(s.otpCodes.id, otp.id));
+    }
+    return otp;
+  },
+
+  async getRecentValidOtpForEmail(email: string, purpose: string) {
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const [otp] = await db.select().from(s.otpCodes)
+      .where(and(
+        eq(s.otpCodes.email, email),
+        eq(s.otpCodes.purpose, purpose),
+        eq(s.otpCodes.used, false),
+        gte(s.otpCodes.expiresAt, new Date()),
+        gte(s.otpCodes.createdAt, twoMinutesAgo)
+      ))
+      .orderBy(desc(s.otpCodes.createdAt))
+      .limit(1);
+    return otp;
+  },
+
+  async verifyOtpForEmail(email: string, code: string, purpose: string) {
+    const [otp] = await db.select().from(s.otpCodes)
+      .where(and(
+        eq(s.otpCodes.email, email),
+        eq(s.otpCodes.code, code),
+        eq(s.otpCodes.purpose, purpose),
+        eq(s.otpCodes.used, false),
+        gte(s.otpCodes.expiresAt, new Date())
+      ))
+      .orderBy(desc(s.otpCodes.createdAt))
+      .limit(1);
     if (otp) {
       await db.update(s.otpCodes).set({ used: true }).where(eq(s.otpCodes.id, otp.id));
     }
@@ -469,6 +551,10 @@ export const storage = {
     const [promo] = await db.select().from(s.promoCodes).where(and(eq(s.promoCodes.code, code.toUpperCase()), eq(s.promoCodes.isActive, true)));
     return promo;
   },
+  async getPromoById(id: string) {
+    const [promo] = await db.select().from(s.promoCodes).where(eq(s.promoCodes.id, id));
+    return promo;
+  },
   async createPromoCode(data: any) {
     const promoData = { ...data, code: data.code.toUpperCase() };
     if (promoData.expiresAt && typeof promoData.expiresAt === 'string') promoData.expiresAt = new Date(promoData.expiresAt);
@@ -483,6 +569,63 @@ export const storage = {
   },
   async incrementPromoUsed(id: string) {
     await db.update(s.promoCodes).set({ usedCount: sql`${s.promoCodes.usedCount} + 1` }).where(eq(s.promoCodes.id, id));
+  },
+  async hasUserRedeemedPromo(promoCodeId: string, userId: string) {
+    const [redemption] = await db.select({ id: s.promoRedemptions.id })
+      .from(s.promoRedemptions)
+      .where(and(eq(s.promoRedemptions.promoCodeId, promoCodeId), eq(s.promoRedemptions.userId, userId)))
+      .limit(1);
+    return Boolean(redemption);
+  },
+  // Claims one unique-user redemption and increments usedCount in one transaction.
+  // The unique index prevents the same user from redeeming concurrently twice.
+  async redeemPromoCode(id: string, userId: string) {
+    try {
+      return await db.transaction(async (tx) => {
+        const [redemption] = await tx.insert(s.promoRedemptions)
+          .values({ promoCodeId: id, userId })
+          .onConflictDoNothing({ target: [s.promoRedemptions.promoCodeId, s.promoRedemptions.userId] })
+          .returning();
+        if (!redemption) throw new Error('PROMO_ALREADY_USED');
+
+        const [promo] = await tx.update(s.promoCodes)
+          .set({ usedCount: sql`${s.promoCodes.usedCount} + 1` })
+          .where(and(
+            eq(s.promoCodes.id, id),
+            eq(s.promoCodes.isActive, true),
+            or(isNull(s.promoCodes.maxUses), sql`${s.promoCodes.usedCount} < ${s.promoCodes.maxUses}`),
+          ))
+          .returning();
+        if (!promo) throw new Error('PROMO_EXHAUSTED');
+        return { promo, redemptionId: redemption.id };
+      });
+    } catch (error: any) {
+      if (error?.message === 'PROMO_ALREADY_USED') return { error: 'already_used' as const };
+      if (error?.message === 'PROMO_EXHAUSTED') return { error: 'exhausted' as const };
+      throw error;
+    }
+  },
+  async attachPromoRedemption(redemptionId: string, orderId: string) {
+    await db.update(s.promoRedemptions)
+      .set({ orderId })
+      .where(eq(s.promoRedemptions.id, redemptionId));
+  },
+  // Gives the unique-user claim and global use back when order storage fails.
+  async releasePromoUse(id: string, userId: string) {
+    await db.transaction(async (tx) => {
+      const [redemption] = await tx.delete(s.promoRedemptions)
+        .where(and(
+          eq(s.promoRedemptions.promoCodeId, id),
+          eq(s.promoRedemptions.userId, userId),
+          isNull(s.promoRedemptions.orderId),
+        ))
+        .returning({ id: s.promoRedemptions.id });
+      if (redemption) {
+        await tx.update(s.promoCodes)
+          .set({ usedCount: sql`GREATEST(${s.promoCodes.usedCount} - 1, 0)` })
+          .where(eq(s.promoCodes.id, id));
+      }
+    });
   },
 
   // ───── SUBSCRIPTIONS ─────
@@ -549,6 +692,31 @@ export const storage = {
   },
   async setSetting(key: string, value: string) {
     await db.insert(s.settings).values({ key, value }).onConflictDoUpdate({ target: s.settings.key, set: { value, updatedAt: new Date() } });
+  },
+
+  // ───── CONTENT PAGES ─────
+  async getContentPages(activeOnly = false) {
+    const q = db.select().from(s.contentPages);
+    const rows = activeOnly
+      ? await q.where(eq(s.contentPages.isActive, true)).orderBy(asc(s.contentPages.sortOrder))
+      : await q.orderBy(asc(s.contentPages.sortOrder));
+    return rows;
+  },
+  async getContentPage(slug: string, activeOnly = true) {
+    const conditions = [eq(s.contentPages.slug, String(slug || '').toLowerCase())];
+    if (activeOnly) conditions.push(eq(s.contentPages.isActive, true));
+    const [page] = await db.select().from(s.contentPages).where(and(...conditions));
+    return page;
+  },
+  async createContentPage(data: any) {
+    const [page] = await db.insert(s.contentPages).values(data).returning();
+    return page;
+  },
+  async updateContentPage(slug: string, data: any) {
+    const patch = { ...data, updatedAt: new Date() };
+    const [page] = await db.update(s.contentPages).set(patch)
+      .where(eq(s.contentPages.slug, String(slug || '').toLowerCase())).returning();
+    return page;
   },
 
   // ───── SAVED RECIPIENTS ─────

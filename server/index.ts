@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { ensureSchema } from "./db";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -229,6 +230,9 @@ function setupErrorHandler(app: express.Application) {
     }
     next();
   });
+
+  // Make sure the columns this release needs exist before serving traffic.
+  await ensureSchema();
 
   // Seed database
   const { seedDatabase } = await import('./seed');

@@ -9,15 +9,22 @@ import pg from "pg";
 import crypto from "crypto";
 import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate, sendWhatsAppMessage } from "./whatsapp";
 import { renderReceiptHtml } from "./receipt";
+import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength } from "./password";
+import { deliverVerificationCode } from "./mailer";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+
+// Length of verification codes. Defaults to 6; set OTP_LENGTH=4 to match the
+// 4-box verification screen. DEFAULT_OTP (staging) always wins when present.
+const OTP_TTL_SECONDS = 5 * 60;          // code lifetime
+const OTP_RESEND_AFTER_SECONDS = 60;     // cooldown before "resend" is allowed
 
 function generateOtp(): string {
   // When DEFAULT_OTP is set in .env, use it (for testing/staging).
   // Remove DEFAULT_OTP from .env when client provides real WhatsApp credentials.
   if (process.env.DEFAULT_OTP) return process.env.DEFAULT_OTP;
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return generateNumericCode(otpLength());
 }
 
 function generateToken(): string {
@@ -32,6 +39,44 @@ function adminAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: 'Admin access required' });
   }
   next();
+}
+
+function normalizePhone(phone: string): string {
+  let clean = String(phone).trim().replace(/[\s\-()]/g, '');
+  if (!clean.startsWith('+')) {
+    if (clean.startsWith('218')) clean = '+' + clean;
+    else if (clean.startsWith('0')) clean = '+218' + clean.slice(1);
+    else clean = '+218' + clean;
+  }
+  return clean;
+}
+
+function normalizeEmail(email: string): string {
+  return String(email).trim().toLowerCase();
+}
+
+// Never return passwordHash to a client.
+function publicUser(user: any) {
+  return {
+    id: user.id,
+    name: user.nameEn,
+    email: user.email,
+    phone: user.phone,
+    hasPassword: !!user.passwordHash,
+  };
+}
+
+// Password change must invalidate previously issued app tokens.
+function revokeUserTokens(userId: string) {
+  for (const [token, id] of tokenStore.entries()) {
+    if (id === userId) tokenStore.delete(token);
+  }
+}
+
+function issueToken(userId: string): string {
+  const token = generateToken();
+  tokenStore.set(token, userId);
+  return token;
 }
 
 function customerAuth(req: Request, res: Response, next: NextFunction) {
@@ -64,6 +109,94 @@ async function appAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// ───── PROMO REDEMPTION ─────
+// Clients may identify the applied promo in more than one way; accept any of
+// them so a promo is always counted against its maxUses.
+// The admin panel can leave "Max Uses" empty. Blank used to mean unlimited, which let a
+// promo be reused forever by mistake. Anything that is not a positive number now defaults
+// to a single use.
+function withDefaultMaxUses(body: any) {
+  const data = { ...(body || {}) };
+  const raw = data.maxUses;
+  const num = (raw === null || raw === undefined || raw === '') ? NaN : Number(raw);
+  data.maxUses = Number.isFinite(num) && num > 0 ? Math.trunc(num) : 1;
+  return data;
+}
+
+function promoRefsFromBody(body: any): string[] {
+  const b = body || {};
+  const nested = b.promo && typeof b.promo === 'object' ? b.promo : null;
+  const raw = [
+    b.promoCodeId, b.promoId,
+    nested && nested.id,
+    b.promoCode, b.code, b.promoCodeValue,
+    typeof b.promo === 'string' ? b.promo : null,
+    nested && nested.code,
+  ];
+  return raw.filter((v: any) => typeof v === 'string' && v.trim()).map((v: string) => v.trim());
+}
+
+// Validates a promo and consumes one use atomically. Returns null when no promo
+// was referenced, { error } when it must be rejected, or { promo, discount }.
+async function redeemPromoForOrder(opts: { body: any; orderAmount: number; userId: string; categoryIds?: any }) {
+  const refs = promoRefsFromBody(opts.body);
+  if (!refs.length) return null;
+
+  let promo: any = null;
+  for (const ref of refs) {
+    promo = await storage.getPromoById(ref);
+    if (!promo) promo = await storage.getPromoByCode(ref);
+    if (promo) break;
+  }
+  if (!promo || !promo.isActive) return { error: 'Invalid code', status: 404 };
+  if (promo.maxUses && promo.usedCount >= promo.maxUses) return { error: 'Code exhausted', status: 400 };
+  if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) return { error: 'Code expired', status: 400 };
+  if (promo.minOrderAmount && opts.orderAmount < parseFloat(promo.minOrderAmount)) {
+    return { error: `Minimum order ${promo.minOrderAmount}`, status: 400 };
+  }
+  if (promo.isFirstOrderOnly && opts.userId) {
+    const orderCount = await storage.getUserOrderCount(opts.userId);
+    if (orderCount > 0) return { error: 'Valid on first order only', status: 400 };
+  }
+  if (promo.categoryId && Array.isArray(opts.categoryIds) && !opts.categoryIds.includes(promo.categoryId)) {
+    return { error: 'Promo not applicable to items in cart', status: 400 };
+  }
+
+  let discount = promo.type === 'percentage'
+    ? opts.orderAmount * parseFloat(promo.value) / 100
+    : parseFloat(promo.value);
+  if (!Number.isFinite(discount) || discount < 0) discount = 0;
+  if (discount > opts.orderAmount) discount = opts.orderAmount;
+
+  const redeemed = await storage.redeemPromoCode(promo.id, opts.userId);
+  if (redeemed.error === 'already_used') return { error: 'Promo code already used by this user', status: 400 };
+  if (redeemed.error === 'exhausted') return { error: 'Code exhausted', status: 400 };
+
+  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: Math.round(discount * 100) / 100 };
+}
+
+// Applies the server-side discount to the client totals, keeping fees/VAT intact.
+function reconcileDiscount(body: any, serverDiscount: number) {
+  const num = (v: any) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  const clientDiscount = num(body?.discount);
+  const clientTotal = num(body?.total);
+  const subtotal = num(body?.subtotal);
+  const fees = num(body?.deliveryFee) + num(body?.expressFee) + num(body?.vatAmount);
+  const appliedDiscount = serverDiscount;
+
+  let finalTotal = clientTotal + clientDiscount - serverDiscount;
+  let source = 'client';
+  // If the client's own numbers do not add up to the order components, the client
+  // has already subtracted the discount without reporting it. Rebuild the total
+  // from the components instead of trusting the client figure.
+  if (subtotal > 0 && Math.abs((clientTotal + clientDiscount) - (subtotal + fees)) > 0.01) {
+    finalTotal = subtotal + fees - serverDiscount;
+    source = 'components';
+  }
+  if (finalTotal < 0) finalTotal = 0;
+  return { clientDiscount, appliedDiscount, finalTotal: Math.round(finalTotal * 100) / 100, source };
+}
+
 export function registerRoutes(app: Express) {
 
   app.use(session({
@@ -84,149 +217,255 @@ export function registerRoutes(app: Express) {
   }));
 
   // ═══════════════════════════════════════
-  // APP AUTH (Simple email + phone)
+  // APP AUTH (email + password, codes delivered by email)
   // ═══════════════════════════════════════
   app.post('/api/auth/register/send-otp', async (req, res) => {
     try {
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim()) {
         return res.status(400).json({ error: 'Name, email, and phone are required' });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, '');
-      if (!cleanPhone.startsWith('+')) {
-        if (cleanPhone.startsWith('218')) cleanPhone = '+' + cleanPhone;
-        else if (cleanPhone.startsWith('0')) cleanPhone = '+218' + cleanPhone.slice(1);
-        else cleanPhone = '+218' + cleanPhone;
+      if (password !== undefined && password !== null && password !== '') {
+        const strengthError = validatePasswordStrength(password);
+        if (strengthError) return res.status(400).json({ error: 'weak_password', message: strengthError });
       }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: 'email_taken', message: 'An account with this email already exists' });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: 'phone_taken', message: 'An account with this phone number already exists' });
       }
-      const existingOtp = await storage.getRecentValidOtp(cleanPhone);
-      if (existingOtp) {
-        console.log(`[REGISTRATION] Reusing recent code for ${cleanPhone}`);
-        return res.json({ success: true, phone: cleanPhone });
+
+      const existing = await storage.getRecentValidOtpForEmail(cleanEmail, 'register');
+      let emailSent = true;
+      if (!existing) {
+        const code = generateOtp();
+        await storage.createOtpFor({ email: cleanEmail, phone: cleanPhone, code, purpose: 'register' });
+        const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: 'register' });
+        emailSent = result.email;
       }
-      const code = generateOtp();
-      await storage.createOtp(cleanPhone, code);
-      console.log(`[REGISTRATION] OTP code for ${cleanPhone}: ${code}`);
-      if (!process.env.DEFAULT_OTP) {
-        // Only attempt WhatsApp when real credentials are configured
-        const result = await sendOtp(cleanPhone, code);
-        if (!result.success) {
-          console.warn(`[REGISTRATION] WhatsApp delivery failed for ${cleanPhone}. Code is in server logs.`);
-        }
-      }
-      res.json({ success: true, phone: cleanPhone });
+
+      res.json({
+        success: true,
+        email: cleanEmail,
+        purpose: 'register',
+        emailSent,
+        expiresInSeconds: OTP_TTL_SECONDS,
+        resendAfterSeconds: OTP_RESEND_AFTER_SECONDS,
+      });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.post('/api/auth/register/verify', async (req, res) => {
     try {
-      const { name, email, phone, code } = req.body;
+      const { name, email, phone, code, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim() || !code?.trim()) {
         return res.status(400).json({ error: 'All fields including verification code are required' });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, '');
-      if (!cleanPhone.startsWith('+')) {
-        if (cleanPhone.startsWith('218')) cleanPhone = '+' + cleanPhone;
-        else if (cleanPhone.startsWith('0')) cleanPhone = '+218' + cleanPhone.slice(1);
-        else cleanPhone = '+218' + cleanPhone;
-      }
-      const otp = await storage.verifyOtp(cleanPhone, code.trim());
+      const strengthError = validatePasswordStrength(password);
+      if (strengthError) return res.status(400).json({ error: 'weak_password', message: strengthError });
+
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+
+      const otp = await storage.verifyOtpForEmail(cleanEmail, String(code).trim(), 'register');
       if (!otp) {
-        return res.status(400).json({ error: 'invalid_otp', message: 'Invalid or expired verification code' });
+        return res.status(400).json({ error: 'invalid_code', message: 'Invalid or expired verification code' });
       }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: 'email_taken', message: 'An account with this email already exists' });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: 'phone_taken', message: 'An account with this phone number already exists' });
       }
+
       const user = await storage.createUser({
         nameEn: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         phone: cleanPhone,
+        passwordHash: hashPassword(password),
         role: 'customer',
         language: 'en',
       });
-      const token = generateToken();
-      tokenStore.set(token, user.id);
-      res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token,
-      });
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // Single-step sign-up without a verification code.
   app.post('/api/auth/register', async (req, res) => {
     try {
-      const { name, email, phone } = req.body;
+      const { name, email, phone, password } = req.body || {};
       if (!name?.trim() || !email?.trim() || !phone?.trim()) {
         return res.status(400).json({ error: 'Name, email, and phone are required' });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, '');
-      if (!cleanPhone.startsWith('+')) {
-        if (cleanPhone.startsWith('218')) cleanPhone = '+' + cleanPhone;
-        else if (cleanPhone.startsWith('0')) cleanPhone = '+218' + cleanPhone.slice(1);
-        else cleanPhone = '+218' + cleanPhone;
-      }
-      const existingEmail = await storage.getUserByEmail(email.trim().toLowerCase());
-      if (existingEmail) {
+      const strengthError = validatePasswordStrength(password);
+      if (strengthError) return res.status(400).json({ error: 'weak_password', message: strengthError });
+
+      const cleanEmail = normalizeEmail(email);
+      const cleanPhone = normalizePhone(phone);
+
+      if (await storage.getUserByEmail(cleanEmail)) {
         return res.status(409).json({ error: 'email_taken', message: 'An account with this email already exists' });
       }
-      const existingPhone = await storage.getUserByPhone(cleanPhone);
-      if (existingPhone) {
+      if (await storage.getUserByPhone(cleanPhone)) {
         return res.status(409).json({ error: 'phone_taken', message: 'An account with this phone number already exists' });
       }
+
       const user = await storage.createUser({
         nameEn: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         phone: cleanPhone,
+        passwordHash: hashPassword(password),
         role: 'customer',
         language: 'en',
       });
-      const token = generateToken();
-      tokenStore.set(token, user.id);
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Sign in with email + password. The legacy email + phone pair still works so
+  // the app build currently in the store keeps authenticating.
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, phone, password } = req.body || {};
+      const cleanEmail = email?.trim() ? normalizeEmail(email) : '';
+      const cleanPhone = phone?.trim() ? normalizePhone(phone) : '';
+
+      let user;
+      if (password) {
+        if (!cleanEmail && !cleanPhone) {
+          return res.status(400).json({ error: 'Email or phone is required' });
+        }
+        user = cleanEmail
+          ? await storage.getUserByEmail(cleanEmail)
+          : await storage.getUserByPhone(cleanPhone);
+        if (!user || !verifyPassword(password, user.passwordHash)) {
+          return res.status(401).json({ error: 'invalid_credentials', message: 'Incorrect email or password' });
+        }
+      } else {
+        if (!cleanEmail || !cleanPhone) {
+          return res.status(400).json({ error: 'Email and phone are required' });
+        }
+        user = await storage.getUserByEmailAndPhone(cleanEmail, cleanPhone);
+        if (!user) {
+          return res.status(401).json({ error: 'no_match', message: 'No account found with that email and phone combination' });
+        }
+      }
+
+      if (user.isBlacklisted) {
+        return res.status(403).json({ error: 'blocked', message: 'This account has been suspended' });
+      }
+
+      await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
+      res.json({ user: publicUser(user), token: issueToken(user.id) });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Step 1 of "Password Reset": email a code to the account address.
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email?.trim()) return res.status(400).json({ error: 'Email is required' });
+      const cleanEmail = normalizeEmail(email);
+
+      const user = await storage.getUserByEmail(cleanEmail);
+      let emailSent = false;
+
+      if (user) {
+        const existing = await storage.getRecentValidOtpForEmail(cleanEmail, 'password_reset');
+        if (!existing) {
+          const code = generateOtp();
+          await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: 'password_reset' });
+          const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: 'password_reset' });
+          emailSent = result.email;
+        }
+      } else {
+        console.warn(`[AUTH] Password reset requested for unknown email: ${cleanEmail}`);
+      }
+
+      // Same response either way so the endpoint cannot be used to discover
+      // which email addresses have accounts.
       res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token,
+        success: true,
+        email: cleanEmail,
+        purpose: 'password_reset',
+        emailSent,
+        expiresInSeconds: OTP_TTL_SECONDS,
+        resendAfterSeconds: OTP_RESEND_AFTER_SECONDS,
       });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  app.post('/api/auth/login', async (req, res) => {
+  // Re-send a sign-up or password-reset code (the "Didn't receive the code?" link).
+  app.post('/api/auth/resend-otp', async (req, res) => {
     try {
-      const { email, phone } = req.body;
-      if (!email?.trim() || !phone?.trim()) {
-        return res.status(400).json({ error: 'Email and phone are required' });
+      const { email, purpose } = req.body || {};
+      if (!email?.trim()) return res.status(400).json({ error: 'Email is required' });
+      const cleanEmail = normalizeEmail(email);
+      const codePurpose = purpose === 'password_reset' ? 'password_reset' : 'register';
+
+      const user = await storage.getUserByEmail(cleanEmail);
+
+      if (codePurpose === 'register' && user) {
+        return res.status(409).json({ error: 'email_taken', message: 'An account with this email already exists' });
       }
-      let cleanPhone = phone.trim().replace(/[\s\-()]/g, '');
-      if (!cleanPhone.startsWith('+')) {
-        if (cleanPhone.startsWith('218')) cleanPhone = '+' + cleanPhone;
-        else if (cleanPhone.startsWith('0')) cleanPhone = '+218' + cleanPhone.slice(1);
-        else cleanPhone = '+218' + cleanPhone;
+      if (codePurpose === 'password_reset' && !user) {
+        return res.status(400).json({ error: 'invalid_email', message: 'No account found with this email' });
       }
-      const user = await storage.getUserByEmailAndPhone(email.trim().toLowerCase(), cleanPhone);
-      if (!user) {
-        return res.status(401).json({ error: 'no_match', message: 'No account found with that email and phone combination' });
+
+      const code = generateOtp();
+      await storage.createOtpFor({ email: cleanEmail, phone: user?.phone ?? null, code, purpose: codePurpose });
+      const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: codePurpose });
+
+      res.json({ success: true, email: cleanEmail, purpose: codePurpose, emailSent: result.email });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Step 2 of "Password Reset": exchange the emailed code for a new password.
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { email, code, newPassword, password } = req.body || {};
+      const nextPassword = newPassword ?? password;
+      if (!email?.trim() || !code?.trim()) {
+        return res.status(400).json({ error: 'Email and verification code are required' });
       }
-      if (user.isBlacklisted) {
-        return res.status(403).json({ error: 'blocked', message: 'This account has been suspended' });
+      const strengthError = validatePasswordStrength(nextPassword);
+      if (strengthError) return res.status(400).json({ error: 'weak_password', message: strengthError });
+
+      const cleanEmail = normalizeEmail(email);
+      const user = await storage.getUserByEmail(cleanEmail);
+      const otp = user
+        ? await storage.verifyOtpForEmail(cleanEmail, String(code).trim(), 'password_reset')
+        : null;
+      if (!otp) {
+        return res.status(400).json({ error: 'invalid_code', message: 'Invalid or expired verification code' });
       }
-      await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
-      const token = generateToken();
-      tokenStore.set(token, user.id);
-      res.json({
-        user: { id: user.id, name: user.nameEn, email: user.email, phone: user.phone },
-        token,
-      });
+
+      await storage.setUserPassword(user!.id, hashPassword(nextPassword));
+      revokeUserTokens(user!.id);
+
+      res.json({ success: true, message: 'Password updated. Please sign in.' });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Change the password of the signed-in account.
+  app.post('/api/auth/change-password', appAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body || {};
+      const user = (req as any).appUser;
+      if (!verifyPassword(currentPassword, user.passwordHash)) {
+        return res.status(401).json({ error: 'invalid_credentials', message: 'Current password is incorrect' });
+      }
+      const strengthError = validatePasswordStrength(newPassword);
+      if (strengthError) return res.status(400).json({ error: 'weak_password', message: strengthError });
+
+      await storage.setUserPassword(user.id, hashPassword(newPassword));
+      revokeUserTokens(user.id);
+      res.json({ success: true, token: issueToken(user.id) });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -395,6 +634,21 @@ export function registerRoutes(app: Express) {
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
+  // ───── CONTENT PAGES (Support / About Us / Privacy Policy / Terms & Conditions) ─────
+  // Public, used by the mobile app. Slugs: support, about, privacy, terms.
+  app.get('/api/content', async (_req, res) => {
+    try { res.json(await storage.getContentPages(true)); }
+    catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.get('/api/content/:slug', async (req, res) => {
+    try {
+      const page = await storage.getContentPage((req.params.slug as string));
+      if (!page) return res.status(404).json({ error: 'Page not found' });
+      res.json(page);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // ═══════════════════════════════════════
   // DELIVERY SLOTS
   // ═══════════════════════════════════════
@@ -432,6 +686,9 @@ export function registerRoutes(app: Express) {
         const orderCount = await storage.getUserOrderCount(userId);
         if (orderCount > 0) return res.status(400).json({ error: 'Valid on first order only' });
       }
+      if (userId && await storage.hasUserRedeemedPromo(promo.id, userId)) {
+        return res.status(400).json({ error: 'Promo code already used by this user' });
+      }
       if (promo.categoryId && Array.isArray(categoryIds) && !categoryIds.includes(promo.categoryId)) {
         return res.status(400).json({ error: 'Promo not applicable to items in cart' });
       }
@@ -451,21 +708,39 @@ export function registerRoutes(app: Express) {
   app.post('/api/orders', customerAuth, async (req, res) => {
     try {
       const sess = req.session as any;
-      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress, promoCodeId } = req.body;
+      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress } = req.body;
 
-      const order = await storage.createOrder({
-        userId: sess.userId,
-        recipientName, recipientPhone, address, cityId,
-        slotId, slotDate, slotTime, cardMessage,
-        paymentMethod, subtotal: subtotal.toString(), deliveryFee: deliveryFee.toString(),
-        expressFee: expressFee.toString(), discount: discount.toString(),
-        vatAmount: vatAmount.toString(), total: total.toString(),
-        totalUSD: totalUSD?.toString(), isExpress, promoCodeId,
-        status: 'paid',
-      }, items);
+      const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
+      const promoResult: any = await redeemPromoForOrder({ body: req.body, orderAmount, userId: sess.userId, categoryIds: req.body.categoryIds });
+      if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0));
+      if (!promoResult && clientDiscount > 0) {
+        console.warn('[promo] /api/orders got a discount without any promo reference. body keys: ' + Object.keys(req.body || {}).join(','));
+      }
+      if (source === 'components') {
+        console.warn('[promo] /api/orders total rebuilt from order components (client total/discount were inconsistent).');
+      }
+
+      let order: any;
+      try {
+        order = await storage.createOrder({
+          userId: sess.userId,
+          recipientName, recipientPhone, address, cityId,
+          slotId, slotDate, slotTime, cardMessage,
+          paymentMethod, subtotal: (subtotal ?? total ?? 0).toString(), deliveryFee: deliveryFee.toString(),
+          expressFee: expressFee.toString(), discount: appliedDiscount.toString(),
+          vatAmount: vatAmount.toString(), total: finalTotal.toString(),
+          totalUSD: totalUSD?.toString(), isExpress, promoCodeId: promoResult ? promoResult.promo.id : null,
+          status: 'paid',
+        }, items);
+      } catch (err) {
+        // Never burn a promo use when the order could not be stored.
+        if (promoResult) await storage.releasePromoUse(promoResult.promo.id, sess.userId).catch(() => {});
+        throw err;
+      }
+      if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
 
       if (slotId) await storage.incrementSlotUsed(slotId);
-      if (promoCodeId) await storage.incrementPromoUsed(promoCodeId);
 
       const loyaltyConfig = await storage.getLoyaltyConfig();
       if (loyaltyConfig) {
@@ -498,24 +773,44 @@ export function registerRoutes(app: Express) {
       const defaultCity = await storage.getCities().then(cities => cities[0]);
       const resolvedCityId = cityId || defaultCity?.id;
 
-      const order = await storage.createOrder({
-        userId: user.id,
-        recipientName, recipientPhone, address,
-        cityId: resolvedCityId,
-        slotDate: slotDate || new Date().toISOString().split('T')[0],
-        slotTime: slotTime || '10:00-13:00',
-        cardMessage: cardMessage || '',
-        paymentMethod: paymentMethod || 'card',
-        subtotal: (subtotal || total || 0).toString(),
-        deliveryFee: (deliveryFee || 0).toString(),
-        expressFee: (expressFee || 0).toString(),
-        discount: (discount || 0).toString(),
-        vatAmount: '0',
-        total: (total || 0).toString(),
-        totalUSD: totalUSD?.toString(),
-        isExpress: isExpress || false,
-        status: 'paid',
-      }, items);
+      const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
+      const promoResult: any = await redeemPromoForOrder({ body: req.body, orderAmount, userId: user.id, categoryIds: req.body.categoryIds });
+      if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0));
+      if (!promoResult && clientDiscount > 0) {
+        console.warn('[promo] /api/orders/app got a discount without any promo reference. body keys: ' + Object.keys(req.body || {}).join(','));
+      }
+      if (source === 'components') {
+        console.warn('[promo] /api/orders/app total rebuilt from order components (client total/discount were inconsistent).');
+      }
+
+      let order: any;
+      try {
+        order = await storage.createOrder({
+          userId: user.id,
+          recipientName, recipientPhone, address,
+          cityId: resolvedCityId,
+          slotDate: slotDate || new Date().toISOString().split('T')[0],
+          slotTime: slotTime || '10:00-13:00',
+          cardMessage: cardMessage || '',
+          paymentMethod: paymentMethod || 'card',
+          subtotal: (subtotal || total || 0).toString(),
+          deliveryFee: (deliveryFee || 0).toString(),
+          expressFee: (expressFee || 0).toString(),
+          discount: appliedDiscount.toString(),
+          vatAmount: '0',
+          total: finalTotal.toString(),
+          totalUSD: totalUSD?.toString(),
+          isExpress: isExpress || false,
+          promoCodeId: promoResult ? promoResult.promo.id : null,
+          status: 'paid',
+        }, items);
+      } catch (err) {
+        // Never burn a promo use when the order could not be stored.
+        if (promoResult) await storage.releasePromoUse(promoResult.promo.id, user.id).catch(() => {});
+        throw err;
+      }
+      if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
 
       if (user.phone) {
         sendOrderConfirmation(user.phone, order.orderNumber).catch(e => console.error('[WhatsApp] Order confirmation failed:', e.message));
@@ -821,12 +1116,12 @@ export function registerRoutes(app: Express) {
   });
 
   app.post('/api/admin/promos', adminAuth, async (req, res) => {
-    try { res.json(await storage.createPromoCode(req.body)); }
+    try { res.json(await storage.createPromoCode(withDefaultMaxUses(req.body))); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
   app.put('/api/admin/promos/:id', adminAuth, async (req, res) => {
-    try { res.json(await storage.updatePromoCode((req.params.id as string), req.body)); }
+    try { res.json(await storage.updatePromoCode((req.params.id as string), withDefaultMaxUses(req.body))); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
@@ -1063,5 +1358,39 @@ export function registerRoutes(app: Express) {
   app.put('/api/admin/settings/:key', adminAuth, async (req, res) => {
     try { await storage.setSetting((req.params.key as string), req.body.value); res.json({ success: true }); }
     catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ───── ADMIN: CONTENT PAGES ─────
+  app.get('/api/admin/content', adminAuth, async (_req, res) => {
+    try { res.json(await storage.getContentPages()); }
+    catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/admin/content', adminAuth, async (req, res) => {
+    try {
+      const { slug, titleEn, titleAr, bodyEn, bodyAr, contactPhone, contactEmail, contactWhatsapp, sortOrder, isActive } = req.body;
+      if (!slug?.trim()) return res.status(400).json({ error: 'Slug is required' });
+      if (!titleEn?.trim() || !titleAr?.trim()) return res.status(400).json({ error: 'English and Arabic titles are required' });
+      const already = await storage.getContentPage(slug, false);
+      if (already) return res.status(409).json({ error: 'A page with this slug already exists' });
+      const page = await storage.createContentPage({
+        slug: slug.trim().toLowerCase(), titleEn, titleAr,
+        bodyEn: bodyEn || '', bodyAr: bodyAr || '',
+        contactPhone: contactPhone || null, contactEmail: contactEmail || null, contactWhatsapp: contactWhatsapp || null,
+        sortOrder: sortOrder ?? 0, isActive: isActive !== false,
+      });
+      res.json(page);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.put('/api/admin/content/:slug', adminAuth, async (req, res) => {
+    try {
+      const patch: any = {};
+      ['titleEn', 'titleAr', 'bodyEn', 'bodyAr', 'contactPhone', 'contactEmail', 'contactWhatsapp', 'sortOrder', 'isActive']
+        .forEach(k => { if (req.body[k] !== undefined) patch[k] = req.body[k]; });
+      const page = await storage.updateContentPage((req.params.slug as string), patch);
+      if (!page) return res.status(404).json({ error: 'Page not found' });
+      res.json(page);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 }
