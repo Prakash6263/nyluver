@@ -22,6 +22,18 @@ const REQUIRED_SCHEMA_STATEMENTS = [
   `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'login'`,
   `ALTER TABLE IF EXISTS otp_codes ALTER COLUMN phone DROP NOT NULL`,
   `ALTER TABLE IF EXISTS loyalty_config ADD COLUMN IF NOT EXISTS point_value numeric(10,2) NOT NULL DEFAULT '10'`,
+  // drizzle-kit push stops before it reaches this table, so every order that
+  // carried a promo code failed with `relation "promo_redemptions" does not
+  // exist`. The unique index is not optional: the claim relies on ON CONFLICT.
+  `CREATE TABLE IF NOT EXISTS promo_redemptions (
+     id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+     promo_code_id varchar NOT NULL REFERENCES promo_codes(id) ON DELETE CASCADE,
+     user_id varchar NOT NULL REFERENCES users(id),
+     order_id varchar REFERENCES orders(id) ON DELETE SET NULL,
+     created_at timestamp NOT NULL DEFAULT now()
+   )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS promo_redemptions_promo_user_unique ON promo_redemptions (promo_code_id, user_id)`,
+  `CREATE INDEX IF NOT EXISTS promo_redemptions_promo_idx ON promo_redemptions (promo_code_id)`,
 ];
 
 export async function ensureSchema(): Promise<void> {
