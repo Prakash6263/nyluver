@@ -473,14 +473,9 @@ const AR = {
   'About Us': 'من نحن',
   'Privacy Policy': 'سياسة الخصوصية',
   'Terms & Conditions': 'الشروط والأحكام',
-  'Redemption Ratio': 'نسبة الاستبدال',
-  'Points': 'النقاط',
-  'Value (LYD)': 'القيمة (د.ل)',
-  'Customers See': 'ما يراه العميل',
-  'Ratio must be above zero': 'يجب أن تكون النسبة أكبر من صفر',
-  'The redemption ratio must be above zero, for example 100 points = 10 LYD.': 'يجب أن تكون نسبة الاستبدال أكبر من صفر، مثال: 100 نقطة = 10 د.ل.',
   'Percentage: customers earn Earn Value % of what they actually pay. Fixed: the same number of points on every order.': 'النسبة المئوية: يحصل العميل على نسبة من قيمة الكسب من المبلغ المدفوع فعلياً. النقاط الثابتة: نفس عدد النقاط لكل طلب.',
-  'What the points are worth when a customer spends them. Example: 100 points = 10 LYD means 500 points take 50 LYD off an order.': 'قيمة النقاط عند استبدالها. مثال: 100 نقطة = 10 د.ل تعني أن 500 نقطة تخصم 50 د.ل من قيمة الطلب.',};
+  'Redemption rate: 1 point = 0.1 LYD (100 points = 10 LYD). Fixed - not editable.': 'سعر الاستبدال: نقطة واحدة = 0.1 د.ل (100 نقطة = 10 د.ل). ثابت - غير قابل للتعديل.',
+};
 
 // Get multilingual value from object based on active LANG
 function getLangField(obj, fieldName = 'name') {
@@ -1425,41 +1420,14 @@ async function renderLoyalty(el) {
       <div class="form-group"><label>Redemption Enabled</label><select id="ly-redeem"><option value="false" ${!config?.redemptionEnabled?'selected':''}>No</option><option value="true" ${config?.redemptionEnabled?'selected':''}>Yes</option></select></div>
     </div>
     <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">Percentage: customers earn Earn Value % of what they actually pay. Fixed: the same number of points on every order.</p>
-    <button class="btn btn-primary" onclick="saveLoyalty()">Save Configuration</button></div>
-    <div class="card"><h3 style="font-family:'Playfair Display',serif;margin-bottom:6px">Redemption Ratio</h3>
-    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">What the points are worth when a customer spends them. Example: 100 points = 10 LYD means 500 points take 50 LYD off an order.</p>
-    <div class="form-row-3">
-      <div class="form-group"><label>Points</label><input id="ly-ppu" type="number" min="1" step="1" value="${config?.pointsPerUnit||100}" oninput="updateLoyaltyRatio()"></div>
-      <div class="form-group"><label>Value (LYD)</label><input id="ly-pv" type="number" min="0" step="0.01" value="${config?.pointValue||10}" oninput="updateLoyaltyRatio()"></div>
-      <div class="form-group"><label>Customers See</label><div id="ly-ratio" style="padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-weight:600;font-size:13px"></div></div>
-    </div>
+    <div style="padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px;margin-bottom:16px">Redemption rate: 1 point = 0.1 LYD (100 points = 10 LYD). Fixed - not editable.</div>
     <button class="btn btn-primary" onclick="saveLoyalty()">Save Configuration</button></div>`;
-  updateLoyaltyRatio();
-}
-
-// The ratio is the one number the client always asks about, so show it back in
-// plain words while it is being typed instead of only after saving.
-function updateLoyaltyRatio() {
-  const points = parseFloat(document.getElementById('ly-ppu').value);
-  const value = parseFloat(document.getElementById('ly-pv').value);
-  const out = document.getElementById('ly-ratio');
-  if (!out) return;
-  if (!(points > 0) || !(value > 0)) { out.textContent = 'Ratio must be above zero'; return; }
-  out.textContent = points + ' points = ' + value + ' LYD (1 point = ' + Number((value / points).toFixed(4)) + ' LYD)';
 }
 
 async function saveLoyalty() {
-  const pointsPerUnit = parseFloat(document.getElementById('ly-ppu').value);
-  const pointValue = parseFloat(document.getElementById('ly-pv').value);
-  if (!(pointsPerUnit > 0) || !(pointValue > 0)) {
-    Swal.fire({ icon:'error', title: t('Error'), text: t('The redemption ratio must be above zero, for example 100 points = 10 LYD.') });
-    return;
-  }
   await api('/api/admin/loyalty/config', {method:'PUT', body:{
     earnType:document.getElementById('ly-type').value,
     earnValue:document.getElementById('ly-val').value,
-    pointsPerUnit,
-    pointValue,
     redemptionEnabled:document.getElementById('ly-redeem').value==='true'
   }});
   showToast('Loyalty config saved!');

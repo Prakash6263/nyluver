@@ -11,7 +11,7 @@ import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate,
 import { renderReceiptHtml } from "./receipt";
 import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength, defaultOtp, type OtpChannel } from "./password";
 import { deliverVerificationCode } from "./mailer";
-import { maxPointsForValue, pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
+import { POINTS_PER_UNIT, UNIT_VALUE_LYD, maxPointsForValue, pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -221,7 +221,7 @@ function reconcileDiscount(body: any, serverDiscount: number) {
 //
 // The web checkout and the app checkout share these helpers, so points are
 // earned and spent the same way everywhere. How much a point is worth comes
-// from the admin panel (pointsPerUnit + pointValue), never from the client.
+// from the fixed rate in server/loyalty.ts, never from the client.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Spends the points the client asked for and reports what was actually charged,
@@ -234,7 +234,7 @@ async function chargeLoyaltyRedemption(userId: string, requestedPoints: unknown,
   if (!redemptionReady(config)) return nothing;
 
   const user = await storage.getUser(userId);
-  const plan = planRedemption(config, user?.loyaltyPoints || 0, requestedPoints, discountRoom);
+  const plan = planRedemption(user?.loyaltyPoints || 0, requestedPoints, discountRoom);
   if (plan.points <= 0) return nothing;
 
   const entry = await storage.redeemLoyaltyPoints({
@@ -983,8 +983,10 @@ export function registerRoutes(app: Express) {
       res.json({
         points: user?.loyaltyPoints || 0,
         redemptionEnabled: redemptionReady(config),
-        pointsPerUnit: config?.pointsPerUnit ?? null,
-        pointValue: config?.pointValue ?? null,
+        // The rate is fixed in code, but it is still reported so the app can
+        // describe the points without hardcoding a number of its own.
+        pointsPerUnit: POINTS_PER_UNIT.toFixed(2),
+        pointValue: UNIT_VALUE_LYD.toFixed(2),
         earnType: config?.earnType ?? null,
         earnValue: config?.earnValue ?? null,
         ledger,
@@ -1016,8 +1018,8 @@ export function registerRoutes(app: Express) {
       const config = await storage.getLoyaltyConfig();
       const balance = user?.loyaltyPoints || 0;
       const room = Math.max(0, subtotal - promoDiscount);
-      const maxRedeemPoints = redemptionReady(config) ? Math.min(balance, maxPointsForValue(config, room)) : 0;
-      const plan = planRedemption(config, balance, body.redeemPoints, room);
+      const maxRedeemPoints = redemptionReady(config) ? Math.min(balance, maxPointsForValue(room)) : 0;
+      const plan = planRedemption(balance, body.redeemPoints, room);
       const serverDiscount = round2(promoDiscount + plan.discount);
       const { finalTotal } = reconcileDiscount(body, serverDiscount);
       const earned = pointsEarned(config, finalTotal);
@@ -1026,8 +1028,8 @@ export function registerRoutes(app: Express) {
         currency: 'LYD',
         points: balance,
         redemptionEnabled: redemptionReady(config),
-        pointsPerUnit: config?.pointsPerUnit ?? null,
-        pointValue: config?.pointValue ?? null,
+        pointsPerUnit: POINTS_PER_UNIT.toFixed(2),
+        pointValue: UNIT_VALUE_LYD.toFixed(2),
         maxRedeemPoints,
         redeemPoints: plan.points,
         redeemDiscount: plan.discount,
@@ -1307,7 +1309,17 @@ export function registerRoutes(app: Express) {
   });
 
   app.put('/api/admin/loyalty/config', adminAuth, async (req, res) => {
-    try { res.json(await storage.updateLoyaltyConfig(req.body)); }
+    try {
+      // Only the earning rules are editable. The redemption rate is fixed in
+      // code (1 point = 0.1 LYD), so any ratio in the request body is ignored
+      // rather than stored and quietly used later.
+      const { earnType, earnValue, redemptionEnabled } = req.body || {};
+      const patch: any = {};
+      if (earnType !== undefined) patch.earnType = earnType === 'fixed' ? 'fixed' : 'percentage';
+      if (earnValue !== undefined) patch.earnValue = earnValue;
+      if (redemptionEnabled !== undefined) patch.redemptionEnabled = redemptionEnabled === true || redemptionEnabled === 'true';
+      res.json(await storage.updateLoyaltyConfig(patch));
+    }
     catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
