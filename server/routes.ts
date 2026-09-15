@@ -9,22 +9,22 @@ import pg from "pg";
 import crypto from "crypto";
 import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate, sendWhatsAppMessage } from "./whatsapp";
 import { renderReceiptHtml } from "./receipt";
-import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength } from "./password";
+import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength, defaultOtp, type OtpChannel } from "./password";
 import { deliverVerificationCode } from "./mailer";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
-// Length of verification codes. Defaults to 6; set OTP_LENGTH=4 to match the
-// 4-box verification screen. DEFAULT_OTP (staging) always wins when present.
+// Verification codes are channel-aware: the mobile app's 4-box screen gets
+// 4-digit codes while the admin panel keeps 6-digit codes. See otpLength()
+// and defaultOtp() in password.ts for the per-channel overrides.
 const OTP_TTL_SECONDS = 5 * 60;          // code lifetime
 const OTP_RESEND_AFTER_SECONDS = 60;     // cooldown before "resend" is allowed
 
-function generateOtp(): string {
-  // When DEFAULT_OTP is set in .env, use it (for testing/staging).
-  // Remove DEFAULT_OTP from .env when client provides real WhatsApp credentials.
-  if (process.env.DEFAULT_OTP) return process.env.DEFAULT_OTP;
-  return generateNumericCode(otpLength());
+function generateOtp(channel: OtpChannel): string {
+  // A fixed code can be pinned per channel for staging (DEFAULT_OTP_APP /
+  // DEFAULT_OTP_ADMIN, or the legacy DEFAULT_OTP).
+  return defaultOtp(channel) ?? generateNumericCode(otpLength(channel));
 }
 
 function generateToken(): string {
@@ -243,7 +243,7 @@ export function registerRoutes(app: Express) {
       const existing = await storage.getRecentValidOtpForEmail(cleanEmail, 'register');
       let emailSent = true;
       if (!existing) {
-        const code = generateOtp();
+        const code = generateOtp('app');
         await storage.createOtpFor({ email: cleanEmail, phone: cleanPhone, code, purpose: 'register' });
         const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: 'register' });
         emailSent = result.email;
@@ -373,22 +373,20 @@ export function registerRoutes(app: Express) {
       const cleanEmail = normalizeEmail(email);
 
       const user = await storage.getUserByEmail(cleanEmail);
-      let emailSent = false;
-
-      if (user) {
-        const existing = await storage.getRecentValidOtpForEmail(cleanEmail, 'password_reset');
-        if (!existing) {
-          const code = generateOtp();
-          await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: 'password_reset' });
-          const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: 'password_reset' });
-          emailSent = result.email;
-        }
-      } else {
+      if (!user) {
         console.warn(`[AUTH] Password reset requested for unknown email: ${cleanEmail}`);
+        return res.status(400).json({ error: 'invalid_email', message: 'No account found with this email' });
       }
 
-      // Same response either way so the endpoint cannot be used to discover
-      // which email addresses have accounts.
+      let emailSent = true;
+      const existing = await storage.getRecentValidOtpForEmail(cleanEmail, 'password_reset');
+      if (!existing) {
+        const code = generateOtp('app');
+        await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: 'password_reset' });
+        const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: 'password_reset' });
+        emailSent = result.email;
+      }
+
       res.json({
         success: true,
         email: cleanEmail,
@@ -417,7 +415,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: 'invalid_email', message: 'No account found with this email' });
       }
 
-      const code = generateOtp();
+      const code = generateOtp('app');
       await storage.createOtpFor({ email: cleanEmail, phone: user?.phone ?? null, code, purpose: codePurpose });
       const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: codePurpose });
 
@@ -513,10 +511,10 @@ export function registerRoutes(app: Express) {
         console.log(`[ADMIN] Reusing recent code for ${phone}`);
         return res.json({ success: true, message: 'OTP sent' });
       }
-      const code = generateOtp();
+      const code = generateOtp('admin');
       await storage.createOtp(phone, code);
       console.log(`[ADMIN] OTP code for ${phone}: ${code}`);
-      if (!process.env.DEFAULT_OTP) {
+      if (!defaultOtp('admin')) {
         // Only attempt WhatsApp when real credentials are configured
         const result = await sendOtp(phone, code);
         if (!result.success) {

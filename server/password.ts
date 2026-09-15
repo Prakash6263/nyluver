@@ -38,11 +38,37 @@ export function validatePasswordStrength(password: unknown): string | null {
   return null;
 }
 
-// Digits used by the verification-code screens. Length is configurable so the
-// 4-box design and the existing 6-digit codes can both be supported.
-export function otpLength(): number {
-  const raw = Number(process.env.OTP_LENGTH);
-  return Number.isInteger(raw) && raw >= 4 && raw <= 8 ? raw : 6;
+// Verification-code length depends on where the code is typed:
+//   app   - the mobile screen uses a 4-box design, so codes are 4 digits
+//   admin - the admin panel keeps its 6-digit codes
+// OTP_LENGTH_APP / OTP_LENGTH_ADMIN override the defaults; the legacy OTP_LENGTH
+// still applies to the admin panel so older deployments keep working.
+export type OtpChannel = "app" | "admin";
+
+const DEFAULT_OTP_LENGTH: Record<OtpChannel, number> = { app: 4, admin: 6 };
+
+function validOtpLength(value: unknown): number | null {
+  const raw = Number(value);
+  return Number.isInteger(raw) && raw >= 4 && raw <= 8 ? raw : null;
+}
+
+export function otpLength(channel: OtpChannel = "app"): number {
+  const scoped = validOtpLength(
+    channel === "admin" ? process.env.OTP_LENGTH_ADMIN : process.env.OTP_LENGTH_APP,
+  );
+  if (scoped) return scoped;
+  if (channel === "admin") {
+    const legacy = validOtpLength(process.env.OTP_LENGTH);
+    if (legacy) return legacy;
+  }
+  return DEFAULT_OTP_LENGTH[channel];
+}
+
+// Staging convenience: a fixed code can be configured per channel. The legacy
+// DEFAULT_OTP still applies so existing test logins keep working.
+export function defaultOtp(channel: OtpChannel): string | undefined {
+  const scoped = channel === "admin" ? process.env.DEFAULT_OTP_ADMIN : process.env.DEFAULT_OTP_APP;
+  return scoped || process.env.DEFAULT_OTP || undefined;
 }
 
 export function generateNumericCode(length = otpLength()): string {

@@ -54,7 +54,10 @@ jobs:
             grep -q "^SESSION_SECRET=" .env  || echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
             grep -q "^PORT=" .env            || echo "PORT=4020"                                    >> .env
             grep -q "^NODE_ENV=" .env        || echo "NODE_ENV=production"                          >> .env
-            grep -q "^DEFAULT_OTP=" .env     || echo "DEFAULT_OTP=123456"                           >> .env
+            # Verification codes must stay random: a leftover DEFAULT_OTP* would pin
+            # one code for every user (app = 4 digits by email, admin = 6 via
+            # WhatsApp), so strip any that an earlier deploy wrote.
+            sed -i "/^DEFAULT_OTP=/d;/^DEFAULT_OTP_APP=/d;/^DEFAULT_OTP_ADMIN=/d" .env
             grep -q "^SMTP_HOST=" .env       || echo "SMTP_HOST=smtp.gmail.com"                     >> .env
             grep -q "^SMTP_PORT=" .env       || echo "SMTP_PORT=587"                                >> .env
             grep -q "^SMTP_SECURE=" .env     || echo "SMTP_SECURE=false"                            >> .env
