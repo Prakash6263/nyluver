@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: 22
-          source: "server_dist/,package.json,package-lock.json,ecosystem.config.cjs,server/admin/index.html,server/templates/"
+          source: "server_dist/,package.json,package-lock.json,ecosystem.config.cjs,server/admin/index.html,server/templates/,scripts/check-smtp.mjs"
           target: "~/nyluver-backend"
           strip_components: 0
 
@@ -55,10 +55,29 @@ jobs:
             grep -q "^PORT=" .env            || echo "PORT=4020"                                    >> .env
             grep -q "^NODE_ENV=" .env        || echo "NODE_ENV=production"                          >> .env
             grep -q "^DEFAULT_OTP=" .env     || echo "DEFAULT_OTP=123456"                           >> .env
+            grep -q "^SMTP_HOST=" .env       || echo "SMTP_HOST=smtp.gmail.com"                     >> .env
+            grep -q "^SMTP_PORT=" .env       || echo "SMTP_PORT=587"                                >> .env
+            grep -q "^SMTP_SECURE=" .env     || echo "SMTP_SECURE=false"                            >> .env
+            grep -q "^SMTP_USER=" .env       || echo "SMTP_USER=${{ secrets.SMTP_USER }}"           >> .env
+            grep -q "^SMTP_PASS=" .env       || echo "SMTP_PASS=${{ secrets.SMTP_PASS }}"           >> .env
+            grep -q "^EMAIL_FROM=" .env      || echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}"         >> .env
 
             # Update vars that must be in sync with GitHub secrets
             sed -i "s|^DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|" .env
             sed -i "s|^SESSION_SECRET=.*|SESSION_SECRET=${{ secrets.SESSION_SECRET }}|" .env
+            sed -i "s|^SMTP_USER=.*|SMTP_USER=${{ secrets.SMTP_USER }}|" .env
+            sed -i "s|^SMTP_PASS=.*|SMTP_PASS=${{ secrets.SMTP_PASS }}|" .env
+            sed -i "s|^EMAIL_FROM=.*|EMAIL_FROM=${{ secrets.EMAIL_FROM }}|" .env
+
+            # Verification codes reach users by email only. Warn loudly (without
+            # blocking the deploy) when SMTP is missing or cannot authenticate,
+            # otherwise the failure stays invisible and codes silently never send.
+            if grep -q "^SMTP_PASS=." .env; then
+              node --env-file=.env scripts/check-smtp.mjs || \
+                echo "WARNING: SMTP check failed - verification codes will NOT be emailed"
+            else
+              echo "WARNING: SMTP_PASS missing from .env - verification codes will NOT be emailed"
+            fi
 
             # Sync database schema
             npx drizzle-kit push || true
