@@ -534,10 +534,43 @@ export const storage = {
     const [config] = await db.insert(s.loyaltyConfig).values(data).returning();
     return config;
   },
+  // The ledger row and the balance must move together: a crash between the two
+  // statements used to leave a customer with a history and no points (or worse,
+  // with points and no history).
   async addLoyaltyEntry(data: any) {
-    const [entry] = await db.insert(s.loyaltyLedger).values(data).returning();
-    await db.update(s.users).set({ loyaltyPoints: sql`${s.users.loyaltyPoints} + ${data.points}` }).where(eq(s.users.id, data.userId));
-    return entry;
+    return await db.transaction(async (tx) => {
+      const [entry] = await tx.insert(s.loyaltyLedger).values(data).returning();
+      await tx.update(s.users)
+        .set({ loyaltyPoints: sql`${s.users.loyaltyPoints} + ${data.points}` })
+        .where(eq(s.users.id, data.userId));
+      return entry;
+    });
+  },
+  // Spends points from a customer's balance. The balance guard sits in the WHERE
+  // clause, so two orders placed at the same moment cannot spend the same points
+  // twice. Returns null when the balance no longer covers the spend.
+  async redeemLoyaltyPoints(data: { userId: string; orderId?: string | null; points: number; description?: string }) {
+    const spend = Math.floor(Number(data.points) || 0);
+    if (spend <= 0) return null;
+    return await db.transaction(async (tx) => {
+      const [user] = await tx.update(s.users)
+        .set({ loyaltyPoints: sql`${s.users.loyaltyPoints} - ${spend}` })
+        .where(and(eq(s.users.id, data.userId), gte(s.users.loyaltyPoints, spend)))
+        .returning();
+      if (!user) return null;
+      const [entry] = await tx.insert(s.loyaltyLedger).values({
+        userId: data.userId,
+        orderId: data.orderId ?? null,
+        points: -spend,
+        type: 'redeem',
+        description: data.description,
+      }).returning();
+      return entry;
+    });
+  },
+  // Links a redemption to the order once the order row exists.
+  async attachLoyaltyOrder(entryId: string, orderId: string) {
+    await db.update(s.loyaltyLedger).set({ orderId }).where(eq(s.loyaltyLedger.id, entryId));
   },
   async getLoyaltyLedger(userId: string) {
     return db.select().from(s.loyaltyLedger).where(eq(s.loyaltyLedger.userId, userId)).orderBy(desc(s.loyaltyLedger.createdAt));

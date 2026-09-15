@@ -11,6 +11,7 @@ import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate,
 import { renderReceiptHtml } from "./receipt";
 import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength, defaultOtp, type OtpChannel } from "./password";
 import { deliverVerificationCode } from "./mailer";
+import { pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -195,6 +196,74 @@ function reconcileDiscount(body: any, serverDiscount: number) {
   }
   if (finalTotal < 0) finalTotal = 0;
   return { clientDiscount, appliedDiscount, finalTotal: Math.round(finalTotal * 100) / 100, source };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOYALTY
+//
+// The web checkout and the app checkout share these helpers, so points are
+// earned and spent the same way everywhere. How much a point is worth comes
+// from the admin panel (pointsPerUnit + pointValue), never from the client.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Spends the points the client asked for and reports what was actually charged,
+// so the caller can take that amount off the order total. Points are handed
+// back by refundLoyaltyRedemption() when the order itself cannot be stored.
+async function chargeLoyaltyRedemption(userId: string, requestedPoints: unknown, discountRoom: number) {
+  const nothing = { points: 0, discount: 0, entryId: null as string | null };
+
+  const config = await storage.getLoyaltyConfig();
+  if (!redemptionReady(config)) return nothing;
+
+  const user = await storage.getUser(userId);
+  const plan = planRedemption(config, user?.loyaltyPoints || 0, requestedPoints, discountRoom);
+  if (plan.points <= 0) return nothing;
+
+  const entry = await storage.redeemLoyaltyPoints({
+    userId,
+    points: plan.points,
+    description: `Redeemed ${plan.points} points for ${plan.discount} off`,
+  });
+  // The balance moved between planning and charging (another order). Place this
+  // order without the redemption instead of giving away an unpaid discount.
+  if (!entry) return nothing;
+
+  return { points: plan.points, discount: plan.discount, entryId: entry.id as string };
+}
+
+// Puts spent points back when the order could not be created.
+async function refundLoyaltyRedemption(userId: string, redemption: { points: number }) {
+  if (redemption.points <= 0) return;
+  await storage.addLoyaltyEntry({
+    userId,
+    points: redemption.points,
+    type: 'refund',
+    description: 'Redemption reversed (order was not stored)',
+  }).catch((e: any) => console.error('[loyalty] Failed to refund redemption:', e.message));
+}
+
+// Credits the points an order earned. Based on what the customer actually pays,
+// so a discounted order earns on the amount it was charged.
+async function creditLoyaltyEarn(userId: string, orderId: string, orderNumber: string, paidTotal: number) {
+  try {
+    const config = await storage.getLoyaltyConfig();
+    const points = pointsEarned(config, paidTotal);
+    if (points <= 0) return 0;
+    await storage.addLoyaltyEntry({
+      userId,
+      orderId,
+      points,
+      type: 'earn',
+      description: `Earned from order ${orderNumber}`,
+    });
+    return points;
+  } catch (e: any) {
+    // The order is already placed and paid for, so a bookkeeping failure is
+    // logged instead of being turned into an error response the app would read
+    // as "order failed" (and retry into a duplicate).
+    console.error('[loyalty] Failed to credit points for order ' + orderNumber + ':', e.message);
+    return 0;
+  }
 }
 
 export function registerRoutes(app: Express) {
@@ -706,12 +775,19 @@ export function registerRoutes(app: Express) {
   app.post('/api/orders', customerAuth, async (req, res) => {
     try {
       const sess = req.session as any;
-      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress } = req.body;
+      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress, redeemPoints } = req.body;
 
       const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
       const promoResult: any = await redeemPromoForOrder({ body: req.body, orderAmount, userId: sess.userId, categoryIds: req.body.categoryIds });
       if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
-      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0));
+
+      const promoDiscount = promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0);
+      // Points are charged before the order is written, so a checkout can never
+      // walk away with a loyalty discount that was not paid for. Whatever the
+      // promo already took off is no longer available to the redemption.
+      const redemption = await chargeLoyaltyRedemption(sess.userId, redeemPoints, orderAmount - promoDiscount);
+      const serverDiscount = round2(promoDiscount + redemption.discount);
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, serverDiscount);
       if (!promoResult && clientDiscount > 0) {
         console.warn('[promo] /api/orders got a discount without any promo reference. body keys: ' + Object.keys(req.body || {}).join(','));
       }
@@ -732,24 +808,18 @@ export function registerRoutes(app: Express) {
           status: 'paid',
         }, items);
       } catch (err) {
-        // Never burn a promo use when the order could not be stored.
+        // Never burn a promo use or a customer's points when the order could not
+        // be stored.
         if (promoResult) await storage.releasePromoUse(promoResult.promo.id, sess.userId).catch(() => {});
+        await refundLoyaltyRedemption(sess.userId, redemption);
         throw err;
       }
       if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
+      if (redemption.entryId) await storage.attachLoyaltyOrder(redemption.entryId, order.id);
 
       if (slotId) await storage.incrementSlotUsed(slotId);
 
-      const loyaltyConfig = await storage.getLoyaltyConfig();
-      if (loyaltyConfig) {
-        const points = Math.floor(total * parseFloat(loyaltyConfig.earnValue) / 100);
-        if (points > 0) {
-          await storage.addLoyaltyEntry({
-            userId: sess.userId, orderId: order.id, points, type: 'earn',
-            description: `Earned from order ${order.orderNumber}`,
-          });
-        }
-      }
+      await creditLoyaltyEarn(sess.userId, order.id, order.orderNumber, finalTotal);
 
       const sender = await storage.getUser(sess.userId);
       if (sender?.phone) {
@@ -766,7 +836,7 @@ export function registerRoutes(app: Express) {
   app.post('/api/orders/app', appAuth, async (req, res) => {
     try {
       const user = (req as any).appUser;
-      const { items, recipientName, recipientPhone, address, cityId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, total, totalUSD, isExpress } = req.body;
+      const { items, recipientName, recipientPhone, address, cityId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, total, totalUSD, isExpress, redeemPoints } = req.body;
 
       const defaultCity = await storage.getCities().then(cities => cities[0]);
       const resolvedCityId = cityId || defaultCity?.id;
@@ -774,7 +844,14 @@ export function registerRoutes(app: Express) {
       const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
       const promoResult: any = await redeemPromoForOrder({ body: req.body, orderAmount, userId: user.id, categoryIds: req.body.categoryIds });
       if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
-      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0));
+
+      const promoDiscount = promoResult ? promoResult.discount : (parseFloat(discount ?? 0) || 0);
+      // Points are charged before the order is written, so a checkout can never
+      // walk away with a loyalty discount that was not paid for. Whatever the
+      // promo already took off is no longer available to the redemption.
+      const redemption = await chargeLoyaltyRedemption(user.id, redeemPoints, orderAmount - promoDiscount);
+      const serverDiscount = round2(promoDiscount + redemption.discount);
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, serverDiscount);
       if (!promoResult && clientDiscount > 0) {
         console.warn('[promo] /api/orders/app got a discount without any promo reference. body keys: ' + Object.keys(req.body || {}).join(','));
       }
@@ -804,11 +881,16 @@ export function registerRoutes(app: Express) {
           status: 'paid',
         }, items);
       } catch (err) {
-        // Never burn a promo use when the order could not be stored.
+        // Never burn a promo use or a customer's points when the order could not
+        // be stored.
         if (promoResult) await storage.releasePromoUse(promoResult.promo.id, user.id).catch(() => {});
+        await refundLoyaltyRedemption(user.id, redemption);
         throw err;
       }
       if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
+      if (redemption.entryId) await storage.attachLoyaltyOrder(redemption.entryId, order.id);
+
+      await creditLoyaltyEarn(user.id, order.id, order.orderNumber, finalTotal);
 
       if (user.phone) {
         sendOrderConfirmation(user.phone, order.orderNumber).catch(e => console.error('[WhatsApp] Order confirmation failed:', e.message));
@@ -866,6 +948,29 @@ export function registerRoutes(app: Express) {
       const ledger = await storage.getLoyaltyLedger(sess.userId);
       const user = await storage.getUser(sess.userId);
       res.json({ points: user?.loyaltyPoints || 0, ledger });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Loyalty for the app: the balance plus the ratio the admin panel currently
+  // has configured, so the checkout screen can show what the points are worth
+  // without hardcoding a number. Redemption itself goes through `redeemPoints`
+  // on POST /api/orders/app.
+  app.get('/api/loyalty/app', appAuth, async (req, res) => {
+    try {
+      const user = (req as any).appUser;
+      const [config, ledger] = await Promise.all([
+        storage.getLoyaltyConfig(),
+        storage.getLoyaltyLedger(user.id),
+      ]);
+      res.json({
+        points: user?.loyaltyPoints || 0,
+        redemptionEnabled: redemptionReady(config),
+        pointsPerUnit: config?.pointsPerUnit ?? null,
+        pointValue: config?.pointValue ?? null,
+        earnType: config?.earnType ?? null,
+        earnValue: config?.earnValue ?? null,
+        ledger,
+      });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 

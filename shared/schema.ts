@@ -329,6 +329,7 @@ export const loyaltyConfig = pgTable("loyalty_config", {
   earnValue: decimal("earn_value", { precision: 5, scale: 2 }).notNull().default('10'),
   redemptionEnabled: boolean("redemption_enabled").notNull().default(false),
   pointsPerUnit: decimal("points_per_unit", { precision: 10, scale: 2 }).notNull().default('100'),
+  pointValue: decimal("point_value", { precision: 10, scale: 2 }).notNull().default('10'),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

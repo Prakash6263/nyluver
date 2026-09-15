@@ -101,7 +101,49 @@ tr:hover td { background:#FAFAF8; }
 .chip-list { display:flex; flex-wrap:wrap; gap:6px; }
 .chip { padding:4px 10px; border-radius:20px; font-size:12px; border:1px solid var(--border); cursor:pointer; transition:all .2s; }
 .chip.selected { background:var(--green); color:#fff; border-color:var(--green); }
-@media(max-width:768px) { .sidebar { display:none; } .main { margin-left:0; padding:16px; } .form-row,.form-row-3 { grid-template-columns:1fr; } }
+#app { flex:1; min-width:0; }
+
+/* ── Mobile navigation (phone / tablet) ─────────────────── */
+.mobile-bar { display:none; }
+.nav-toggle { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--green); font-size:18px; line-height:1; cursor:pointer; }
+.nav-backdrop { display:none; }
+
+@media(max-width:900px) {
+  .mobile-bar {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    position:sticky; top:0; z-index:200; background:var(--green); padding:10px 14px;
+  }
+  .mobile-bar .mobile-brand { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); }
+  .mobile-bar .nav-toggle { background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.22); color:#fff; }
+  .mobile-bar .lang-switch { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.15); }
+  .mobile-bar .lang-switch .lang-btn { color:rgba(255,255,255,.7); }
+  .mobile-bar .lang-switch .lang-btn.active { background:var(--gold); color:var(--green); }
+  .sidebar {
+    display:flex; width:min(78vw,280px); z-index:300;
+    transform:translateX(-100%); transition:transform .25s ease;
+    box-shadow:0 0 24px rgba(0,0,0,.35);
+  }
+  body.nav-open .sidebar { transform:translateX(0); }
+  html[dir="rtl"] .sidebar { transform:translateX(100%); }
+  html[dir="rtl"] body.nav-open .sidebar { transform:translateX(0); }
+  .nav-backdrop { display:block; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:250; opacity:0; pointer-events:none; transition:opacity .2s; }
+  body.nav-open .nav-backdrop { opacity:1; pointer-events:auto; }
+  .main { margin-left:0; margin-right:0; padding:14px; }
+  .form-row,.form-row-3 { grid-template-columns:1fr; }
+  .top-header { display:none; }
+  .page-header { flex-wrap:wrap; gap:10px; }
+  .page-header h2 { font-size:20px; }
+  .top-header { flex-wrap:wrap; gap:10px; }
+  .card { padding:14px; overflow-x:auto; }
+  table { min-width:540px; }
+  .modal { width:94%; padding:18px; }
+  .stats-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-card { padding:14px; }
+  .stat-card .value { font-size:22px; }
+  .login-container { min-height:calc(100vh - 62px); padding:24px 14px; }
+  .login-card { width:100%; max-width:400px; padding:28px 22px; }
+}
+@media(max-width:420px) { .stats-grid { grid-template-columns:1fr; } }
 
 /* ── Language switcher (EN / AR) ───────────────────────── */
 .lang-switch { display:inline-flex; align-items:center; gap:3px; background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:3px 6px; }
@@ -412,7 +454,33 @@ const AR = {
   'Sending...': 'جارٍ الإرسال...',
   'Sent!': 'تم الإرسال!',
   'Failed': 'فشل',
-};
+  'Content Pages': 'صفحات المحتوى',
+  'Add Page': 'إضافة صفحة',
+  'Edit Page': 'تعديل صفحة',
+  'Page': 'صفحة',
+  'Slug': 'المعرف',
+  'Sort Order': 'ترتيب العرض',
+  'Title (English)': 'العنوان (إنجليزي)',
+  'Title (Arabic)': 'العنوان (عربي)',
+  'Content (English)': 'المحتوى (إنجليزي)',
+  'Content (Arabic)': 'المحتوى (عربي)',
+  'Contact Phone': 'هاتف التواصل',
+  'Contact Email': 'البريد الإلكتروني',
+  'Contact WhatsApp': 'واتساب التواصل',
+  'Last Updated': 'آخر تحديث',
+  'Not created yet': 'لم يتم إنشاؤه بعد',
+  'Support': 'الدعم',
+  'About Us': 'من نحن',
+  'Privacy Policy': 'سياسة الخصوصية',
+  'Terms & Conditions': 'الشروط والأحكام',
+  'Redemption Ratio': 'نسبة الاستبدال',
+  'Points': 'النقاط',
+  'Value (LYD)': 'القيمة (د.ل)',
+  'Customers See': 'ما يراه العميل',
+  'Ratio must be above zero': 'يجب أن تكون النسبة أكبر من صفر',
+  'The redemption ratio must be above zero, for example 100 points = 10 LYD.': 'يجب أن تكون نسبة الاستبدال أكبر من صفر، مثال: 100 نقطة = 10 د.ل.',
+  'Percentage: customers earn Earn Value % of what they actually pay. Fixed: the same number of points on every order.': 'النسبة المئوية: يحصل العميل على نسبة من قيمة الكسب من المبلغ المدفوع فعلياً. النقاط الثابتة: نفس عدد النقاط لكل طلب.',
+  'What the points are worth when a customer spends them. Example: 100 points = 10 LYD means 500 points take 50 LYD off an order.': 'قيمة النقاط عند استبدالها. مثال: 100 نقطة = 10 د.ل تعني أن 500 نقطة تخصم 50 د.ل من قيمة الطلب.',};
 
 // Get multilingual value from object based on active LANG
 function getLangField(obj, fieldName = 'name') {
@@ -534,15 +602,13 @@ function setLang(lang) {
   LANG = lang;
   try {
     localStorage.setItem(LANG_KEY, lang);
-    localStorage.setItem('nyluver-admin-lang', lang);
   } catch (e) {}
   applyLangAttrs();
-  if (currentUser) renderApp(); else renderLogin();
+  if (!currentUser) { renderLogin(); return; }
+  const page = currentPage;
+  renderApp();
+  if (page && page !== 'dashboard') nav(page);
 }
-
-// Ensure language attributes and translation observer run on initial load
-applyLangAttrs();
-observeTranslations();
 
 function showToast(message, icon = 'success') {
   Swal.fire({ toast: true, position: LANG === 'ar' ? 'top-start' : 'top-end', icon, title: t(message), showConfirmButton: false, timer: 2500, timerProgressBar: true, dir: LANG === 'ar' ? 'rtl' : 'ltr' });
@@ -580,11 +646,9 @@ function renderLogin() {
   app.innerHTML = `
     <div class="login-container">
       <div class="login-card">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-          ${langSwitcherHtml()}
-        </div>
         <h1>Nyluver</h1>
         <p class="subtitle">Admin Dashboard</p>
+        ${langSwitcherHtml()}
         <div id="login-form">
           <div class="form-group">
             <label>Admin Phone</label>
@@ -611,7 +675,7 @@ async function sendAdminOtp() {
     const res = await api('/api/auth/send-otp', { method: 'POST', body: { phone } });
     document.getElementById('login-form').classList.add('hidden');
     document.getElementById('otp-form').classList.remove('hidden');
-    if (res.devCode) document.getElementById('dev-otp').textContent = 'Dev code: ' + res.devCode;
+    if (res.devCode) document.getElementById('dev-otp').textContent = t('Dev code:') + ' ' + res.devCode;
   } catch (e) { document.getElementById('login-error').textContent = e.message; }
 }
 
@@ -628,6 +692,12 @@ async function verifyAdminOtp() {
 function renderApp() {
   const app = document.getElementById('app');
   app.innerHTML = `
+    <div class="mobile-bar">
+      <button class="nav-toggle" onclick="toggleNav()" aria-label="Menu">&#9776;</button>
+      <span class="mobile-brand">Nyluver</span>
+      ${langSwitcherHtml()}
+    </div>
+    <div class="nav-backdrop" onclick="toggleNav(false)"></div>
     <div class="sidebar">
       <div class="sidebar-brand"><h1>Nyluver</h1><span>Admin Panel</span></div>
       <nav class="sidebar-nav">
@@ -652,6 +722,7 @@ function renderApp() {
         <a onclick="nav('fraud')" data-page="fraud">&#9888; Fraud</a>
         <a onclick="nav('users')" data-page="users">&#9823; Users</a>
         <a onclick="nav('cities')" data-page="cities">&#9960; Cities</a>
+        <a onclick="nav('content')" data-page="content">&#9635; Content Pages</a>
         <div class="section-label">Account</div>
         <a onclick="logout()" style="color:rgba(255,100,100,0.85);">&#10006; Logout</a>
       </nav>
@@ -683,9 +754,15 @@ async function logout() {
   renderLogin();
 }
 
+function toggleNav(open) {
+  const next = (open === undefined) ? !document.body.classList.contains('nav-open') : !!open;
+  document.body.classList.toggle('nav-open', next);
+}
+
 function nav(page) {
   currentPage = page;
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  toggleNav(false);
   loadPage(page);
 }
 
@@ -711,6 +788,7 @@ async function loadPage(page) {
       case 'fraud': await renderFraud(el); break;
       case 'users': await renderUsers(el); break;
       case 'cities': await renderCities(el); break;
+      case 'content': await renderContentPages(el); break;
     }
   } catch(e) { el.innerHTML = `<div class="card"><p style="color:var(--red)">${e.message}</p></div>`; }
 }
@@ -993,7 +1071,7 @@ async function showOrderDetail(id) {
   modal.className = 'modal-overlay';
   modal.onclick = e => { if(e.target===modal)modal.remove(); };
   modal.innerHTML = `<div class="modal" style="max-width:700px">
-    <div class="flex-between"><h3>Order ${order.orderNumber}</h3><div><span class="badge badge-blue">${t(order.status)}</span> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${order.id}/receipt','_blank')">Receipt</button></div></div>
+    <div class="flex-between"><h3>${t('Order')} ${order.orderNumber}</h3><div><span class="badge badge-blue">${t(order.status)}</span> <button class="btn btn-outline btn-sm" onclick="window.open(API+'/api/admin/orders/${order.id}/receipt','_blank')">Receipt</button></div></div>
     <div style="margin:16px 0;padding:16px;background:var(--bg);border-radius:8px">
       <div class="form-row">
         <div><strong>Recipient:</strong> ${order.recipientName}<br>${order.recipientPhone}</div>
@@ -1188,13 +1266,13 @@ async function renderPromos(el) {
 }
 
 function showPromoModal(p) {
-  p = p || {code:'',type:'percentage',value:'10',minOrderAmount:'',maxUses:'',isFirstOrderOnly:false,isActive:true};
+  p = p || {code:'',type:'percentage',value:'10',minOrderAmount:'',maxUses:'1',isFirstOrderOnly:false,isActive:true};
   const modal = document.createElement('div');
   modal.className='modal-overlay';
   modal.onclick=e=>{if(e.target===modal)modal.remove();};
   modal.innerHTML=`<div class="modal"><h3>${p.id?'Edit':'Add'} Promo Code</h3>
     <div class="form-row"><div class="form-group"><label>Code</label><input id="mpr-code" value="${p.code}" style="text-transform:uppercase"></div><div class="form-group"><label>Type</label><select id="mpr-type"><option value="percentage" ${p.type==='percentage'?'selected':''}>Percentage</option><option value="fixed" ${p.type==='fixed'?'selected':''}>Fixed Amount</option></select></div></div>
-    <div class="form-row-3"><div class="form-group"><label>Value</label><input id="mpr-val" type="number" value="${p.value}"></div><div class="form-group"><label>Min Order</label><input id="mpr-min" type="number" value="${p.minOrderAmount||''}"></div><div class="form-group"><label>Max Uses</label><input id="mpr-max" type="number" value="${p.maxUses||''}"></div></div>
+    <div class="form-row-3"><div class="form-group"><label>Value</label><input id="mpr-val" type="number" value="${p.value}"></div><div class="form-group"><label>Min Order</label><input id="mpr-min" type="number" value="${p.minOrderAmount||''}"></div><div class="form-group"><label>Max Uses</label><input id="mpr-max" type="number" min="1" value="${p.maxUses||1}"></div></div>
     <div class="form-row"><div class="form-group"><label>First Order Only</label><select id="mpr-fo"><option value="false" ${!p.isFirstOrderOnly?'selected':''}>No</option><option value="true" ${p.isFirstOrderOnly?'selected':''}>Yes</option></select></div><div class="form-group"><label>Active</label><select id="mpr-act"><option value="true" ${p.isActive?'selected':''}>Yes</option><option value="false" ${!p.isActive?'selected':''}>No</option></select></div></div>
     <div class="form-row"><div class="form-group"><label>Expires At</label><input id="mpr-exp" type="datetime-local" value="${p.expiresAt?p.expiresAt.slice(0,16):''}"></div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="savePromo('${p.id||''}')">Save</button></div></div>`;
@@ -1203,7 +1281,7 @@ function showPromoModal(p) {
 
 async function savePromo(id) {
   const data={code:document.getElementById('mpr-code').value,type:document.getElementById('mpr-type').value,value:document.getElementById('mpr-val').value,
-    minOrderAmount:document.getElementById('mpr-min').value||null,maxUses:document.getElementById('mpr-max').value?parseInt(document.getElementById('mpr-max').value):null,
+    minOrderAmount:document.getElementById('mpr-min').value||null,maxUses:document.getElementById('mpr-max').value?parseInt(document.getElementById('mpr-max').value):1,
     isFirstOrderOnly:document.getElementById('mpr-fo').value==='true',isActive:document.getElementById('mpr-act').value==='true',expiresAt:document.getElementById('mpr-exp').value?new Date(document.getElementById('mpr-exp').value).toISOString():null};
   if(id) await api('/api/admin/promos/'+id,{method:'PUT',body:data});
   else await api('/api/admin/promos',{method:'POST',body:data});
@@ -1212,6 +1290,84 @@ async function savePromo(id) {
 }
 
 // ═══════ BANNERS ═══════
+// ═══════════ CONTENT PAGES (Support / About / Privacy / Terms) ═══════════
+const DEFAULT_CONTENT_PAGES = [
+  { slug:'support', titleEn:'Support',            titleAr:'الدعم' },
+  { slug:'about',   titleEn:'About Us',           titleAr:'من نحن' },
+  { slug:'privacy', titleEn:'Privacy Policy',     titleAr:'سياسة الخصوصية' },
+  { slug:'terms',   titleEn:'Terms & Conditions', titleAr:'الشروط والأحكام' },
+];
+
+async function renderContentPages(el) {
+  const pages = await api('/api/admin/content');
+  pageData.content = pages;
+  const known = {};
+  pages.forEach(p => { known[p.slug] = true; });
+  const missing = DEFAULT_CONTENT_PAGES.filter(p => !known[p.slug]);
+  el.innerHTML = `
+    <div class="page-header"><h2>Content Pages</h2><button class="btn btn-primary" onclick="showContentPageModal('')">+ Add Page</button></div>
+    <div class="card" style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Page</th><th>Title (English)</th><th>Title (Arabic)</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr></thead>
+        <tbody>${pages.map(p => `
+          <tr onclick="if(window.innerWidth<=900)showContentPageModal('${p.slug}')">
+            <td><code style="font-weight:600">${p.slug}</code></td>
+            <td>${p.titleEn || '-'}</td>
+            <td dir="rtl">${p.titleAr || '-'}</td>
+            <td>${p.isActive ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Inactive</span>'}</td>
+            <td>${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '-'}</td>
+            <td><button class="btn btn-outline btn-sm" onclick="showContentPageModal('${p.slug}')">Edit</button></td>
+          </tr>`).join('')}</tbody>
+      </table>
+      ${pages.length === 0 ? '<div class="empty-state"><p>No pages yet</p></div>' : ''}
+    </div>
+    ${missing.length ? `<div class="card">
+      <h3 style="font-family:'Playfair Display',serif;margin-bottom:12px">Not created yet</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${missing.map(p => `<button class="btn btn-primary btn-sm" onclick="showContentPageModal('${p.slug}')">+ ${t(p.titleEn)}</button>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+function showContentPageModal(slug) {
+  const existing = (pageData.content || []).find(p => p.slug === slug);
+  const fallback = DEFAULT_CONTENT_PAGES.find(p => p.slug === slug) || { slug:'', titleEn:'', titleAr:'' };
+  const p = existing || Object.assign({ bodyEn:'', bodyAr:'', contactPhone:'', contactEmail:'', contactWhatsapp:'', sortOrder:0, isActive:true }, fallback);
+  const modal = document.createElement('div');
+  modal.className='modal-overlay';
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  modal.innerHTML=`<div class="modal"><h3>${existing?'Edit Page':'Add Page'}</h3>
+    <div class="form-row"><div class="form-group"><label>Slug</label><input id="mcp-slug" value="${p.slug}" ${existing?'disabled':''}></div><div class="form-group"><label>Sort Order</label><input id="mcp-sort" type="number" value="${p.sortOrder||0}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Title (English)</label><input id="mcp-ten" value="${p.titleEn||''}"></div><div class="form-group"><label>Title (Arabic)</label><input id="mcp-tar" value="${p.titleAr||''}" dir="rtl"></div></div>
+    <div class="form-group"><label>Content (English)</label><textarea id="mcp-ben" rows="7">${p.bodyEn||''}</textarea></div>
+    <div class="form-group"><label>Content (Arabic)</label><textarea id="mcp-bar" rows="7" dir="rtl">${p.bodyAr||''}</textarea></div>
+    <div class="form-row-3"><div class="form-group"><label>Contact Phone</label><input id="mcp-phone" value="${p.contactPhone||''}"></div><div class="form-group"><label>Contact Email</label><input id="mcp-email" value="${p.contactEmail||''}"></div><div class="form-group"><label>Contact WhatsApp</label><input id="mcp-wa" value="${p.contactWhatsapp||''}"></div></div>
+    <div class="form-row"><div class="form-group"><label>Active</label><select id="mcp-act"><option value="true" ${p.isActive?'selected':''}>Yes</option><option value="false" ${!p.isActive?'selected':''}>No</option></select></div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveContentPage('${existing?p.slug:''}')">Save</button></div></div>`;
+  document.body.appendChild(modal);
+  translateDom(modal);
+}
+
+async function saveContentPage(slug) {
+  const data = {
+    slug: document.getElementById('mcp-slug').value.trim().toLowerCase(),
+    titleEn: document.getElementById('mcp-ten').value,
+    titleAr: document.getElementById('mcp-tar').value,
+    bodyEn: document.getElementById('mcp-ben').value,
+    bodyAr: document.getElementById('mcp-bar').value,
+    contactPhone: document.getElementById('mcp-phone').value || null,
+    contactEmail: document.getElementById('mcp-email').value || null,
+    contactWhatsapp: document.getElementById('mcp-wa').value || null,
+    sortOrder: parseInt(document.getElementById('mcp-sort').value) || 0,
+    isActive: document.getElementById('mcp-act').value === 'true',
+  };
+  try {
+    if (slug) await api('/api/admin/content/' + slug, { method: 'PUT', body: data });
+    else await api('/api/admin/content', { method: 'POST', body: data });
+  } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message }); return; }
+  document.querySelector('.modal-overlay')?.remove();
+  nav('content');
+}
 async function renderBanners(el) {
   const banners = await api('/api/admin/banners');
   el.innerHTML = `<div class="page-header"><h2>Banners</h2><button class="btn btn-primary" onclick="showBannerModal()">+ Add Banner</button></div>
@@ -1265,18 +1421,45 @@ async function renderLoyalty(el) {
     <div class="card"><h3 style="font-family:'Playfair Display',serif;margin-bottom:16px">Configuration</h3>
     <div class="form-row-3">
       <div class="form-group"><label>Earn Type</label><select id="ly-type"><option value="percentage" ${config?.earnType==='percentage'?'selected':''}>Percentage of Order</option><option value="fixed" ${config?.earnType==='fixed'?'selected':''}>Fixed Points</option></select></div>
-      <div class="form-group"><label>Earn Value</label><input id="ly-val" type="number" value="${config?.earnValue||10}"></div>
-      <div class="form-group"><label>Points per Unit (redemption)</label><input id="ly-ppu" type="number" value="${config?.pointsPerUnit||100}"></div>
+      <div class="form-group"><label>Earn Value</label><input id="ly-val" type="number" min="0" step="0.01" value="${config?.earnValue||10}"></div>
+      <div class="form-group"><label>Redemption Enabled</label><select id="ly-redeem"><option value="false" ${!config?.redemptionEnabled?'selected':''}>No</option><option value="true" ${config?.redemptionEnabled?'selected':''}>Yes</option></select></div>
     </div>
-    <div class="form-group"><label>Redemption Enabled</label><select id="ly-redeem"><option value="false" ${!config?.redemptionEnabled?'selected':''}>No</option><option value="true" ${config?.redemptionEnabled?'selected':''}>Yes</option></select></div>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">Percentage: customers earn Earn Value % of what they actually pay. Fixed: the same number of points on every order.</p>
+    <button class="btn btn-primary" onclick="saveLoyalty()">Save Configuration</button></div>
+    <div class="card"><h3 style="font-family:'Playfair Display',serif;margin-bottom:6px">Redemption Ratio</h3>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">What the points are worth when a customer spends them. Example: 100 points = 10 LYD means 500 points take 50 LYD off an order.</p>
+    <div class="form-row-3">
+      <div class="form-group"><label>Points</label><input id="ly-ppu" type="number" min="1" step="1" value="${config?.pointsPerUnit||100}" oninput="updateLoyaltyRatio()"></div>
+      <div class="form-group"><label>Value (LYD)</label><input id="ly-pv" type="number" min="0" step="0.01" value="${config?.pointValue||10}" oninput="updateLoyaltyRatio()"></div>
+      <div class="form-group"><label>Customers See</label><div id="ly-ratio" style="padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-weight:600;font-size:13px"></div></div>
+    </div>
     <button class="btn btn-primary" onclick="saveLoyalty()">Save Configuration</button></div>`;
+  updateLoyaltyRatio();
+}
+
+// The ratio is the one number the client always asks about, so show it back in
+// plain words while it is being typed instead of only after saving.
+function updateLoyaltyRatio() {
+  const points = parseFloat(document.getElementById('ly-ppu').value);
+  const value = parseFloat(document.getElementById('ly-pv').value);
+  const out = document.getElementById('ly-ratio');
+  if (!out) return;
+  if (!(points > 0) || !(value > 0)) { out.textContent = 'Ratio must be above zero'; return; }
+  out.textContent = points + ' points = ' + value + ' LYD (1 point = ' + Number((value / points).toFixed(4)) + ' LYD)';
 }
 
 async function saveLoyalty() {
+  const pointsPerUnit = parseFloat(document.getElementById('ly-ppu').value);
+  const pointValue = parseFloat(document.getElementById('ly-pv').value);
+  if (!(pointsPerUnit > 0) || !(pointValue > 0)) {
+    Swal.fire({ icon:'error', title: t('Error'), text: t('The redemption ratio must be above zero, for example 100 points = 10 LYD.') });
+    return;
+  }
   await api('/api/admin/loyalty/config', {method:'PUT', body:{
     earnType:document.getElementById('ly-type').value,
     earnValue:document.getElementById('ly-val').value,
-    pointsPerUnit:document.getElementById('ly-ppu').value,
+    pointsPerUnit,
+    pointValue,
     redemptionEnabled:document.getElementById('ly-redeem').value==='true'
   }});
   showToast('Loyalty config saved!');
@@ -1436,6 +1619,8 @@ async function saveCity(id) {
 }
 
 // ═══════ INIT ═══════
+applyLangAttrs();
+observeTranslations();
 checkAuth();
 </script>
 </body>

@@ -21,6 +21,7 @@ const REQUIRED_SCHEMA_STATEMENTS = [
   `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS email text`,
   `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'login'`,
   `ALTER TABLE IF EXISTS otp_codes ALTER COLUMN phone DROP NOT NULL`,
+  `ALTER TABLE IF EXISTS loyalty_config ADD COLUMN IF NOT EXISTS point_value numeric(10,2) NOT NULL DEFAULT '10'`,
 ];
 
 export async function ensureSchema(): Promise<void> {
