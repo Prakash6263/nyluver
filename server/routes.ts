@@ -11,7 +11,7 @@ import { sendOtp, sendOrderConfirmation, sendGiftNotification, sendStatusUpdate,
 import { renderReceiptHtml } from "./receipt";
 import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength, defaultOtp, type OtpChannel } from "./password";
 import { deliverVerificationCode } from "./mailer";
-import { pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
+import { maxPointsForValue, pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -137,11 +137,25 @@ function promoRefsFromBody(body: any): string[] {
   return raw.filter((v: any) => typeof v === 'string' && v.trim()).map((v: string) => v.trim());
 }
 
-// Validates a promo and consumes one use atomically. Returns null when no promo
-// was referenced, { error } when it must be rejected, or { promo, discount }.
-async function redeemPromoForOrder(opts: { body: any; orderAmount: number; userId: string; categoryIds?: any }) {
+// What a promo is worth on an order. Percentage promos take their cut of the
+// items subtotal, fixed promos take a flat amount, and neither can go past the
+// order itself.
+function promoDiscountValue(promo: any, orderAmount: number): number {
+  let discount = promo.type === 'percentage'
+    ? orderAmount * parseFloat(promo.value) / 100
+    : parseFloat(promo.value);
+  if (!Number.isFinite(discount) || discount < 0) discount = 0;
+  if (discount > orderAmount) discount = orderAmount;
+  return Math.round(discount * 100) / 100;
+}
+
+// Looks a promo up and runs every check on it, without spending a use. Shared
+// by checkout (which then consumes a use) and by the loyalty preview (which
+// must leave everything untouched). Returns { promo: null } when no promo was
+// referenced, { error, status } when it must be rejected, or { promo, discount }.
+async function resolvePromoForOrder(opts: { body: any; orderAmount: number; userId: string; categoryIds?: any }) {
   const refs = promoRefsFromBody(opts.body);
-  if (!refs.length) return null;
+  if (!refs.length) return { promo: null, discount: 0 };
 
   let promo: any = null;
   for (const ref of refs) {
@@ -163,17 +177,21 @@ async function redeemPromoForOrder(opts: { body: any; orderAmount: number; userI
     return { error: 'Promo not applicable to items in cart', status: 400 };
   }
 
-  let discount = promo.type === 'percentage'
-    ? opts.orderAmount * parseFloat(promo.value) / 100
-    : parseFloat(promo.value);
-  if (!Number.isFinite(discount) || discount < 0) discount = 0;
-  if (discount > opts.orderAmount) discount = opts.orderAmount;
+  return { promo, discount: promoDiscountValue(promo, opts.orderAmount) };
+}
 
-  const redeemed = await storage.redeemPromoCode(promo.id, opts.userId);
+// Validates a promo and consumes one use atomically. Returns null when no promo
+// was referenced, { error } when it must be rejected, or { promo, discount }.
+async function redeemPromoForOrder(opts: { body: any; orderAmount: number; userId: string; categoryIds?: any }) {
+  const resolved: any = await resolvePromoForOrder(opts);
+  if (resolved.error) return resolved;
+  if (!resolved.promo) return null;
+
+  const redeemed = await storage.redeemPromoCode(resolved.promo.id, opts.userId);
   if (redeemed.error === 'already_used') return { error: 'Promo code already used by this user', status: 400 };
   if (redeemed.error === 'exhausted') return { error: 'Code exhausted', status: 400 };
 
-  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: Math.round(discount * 100) / 100 };
+  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: resolved.discount };
 }
 
 // Applies the server-side discount to the client totals, keeping fees/VAT intact.
@@ -970,6 +988,58 @@ export function registerRoutes(app: Express) {
         earnType: config?.earnType ?? null,
         earnValue: config?.earnValue ?? null,
         ledger,
+      });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // Checkout preview: hand it the same numbers the app is about to order with
+  // and it answers how many points the customer can spend, how much comes off
+  // and what will actually be charged, so the app can show the arithmetic
+  // instead of working it out itself. Nothing is reserved or spent here - the
+  // points move only on POST /api/orders/app.
+  app.post('/api/loyalty/app/preview', appAuth, async (req, res) => {
+    try {
+      const user = (req as any).appUser;
+      const body = req.body || {};
+      const parse = (v: any) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+      const subtotal = parse(body.subtotal ?? body.total);
+      const fees = round2(parse(body.deliveryFee) + parse(body.expressFee) + parse(body.vatAmount));
+
+      // The same promo checks the order will run, minus the use it consumes, so
+      // the quote cannot promise a promo the checkout would then reject.
+      const resolved: any = await resolvePromoForOrder({
+        body, orderAmount: subtotal, userId: user.id, categoryIds: body.categoryIds,
+      });
+      if (resolved.error) return res.status(resolved.status || 400).json({ error: resolved.error });
+      const promoDiscount = resolved.promo ? resolved.discount : parse(body.discount);
+
+      const config = await storage.getLoyaltyConfig();
+      const balance = user?.loyaltyPoints || 0;
+      const room = Math.max(0, subtotal - promoDiscount);
+      const maxRedeemPoints = redemptionReady(config) ? Math.min(balance, maxPointsForValue(config, room)) : 0;
+      const plan = planRedemption(config, balance, body.redeemPoints, room);
+      const serverDiscount = round2(promoDiscount + plan.discount);
+      const { finalTotal } = reconcileDiscount(body, serverDiscount);
+      const earned = pointsEarned(config, finalTotal);
+
+      res.json({
+        currency: 'LYD',
+        points: balance,
+        redemptionEnabled: redemptionReady(config),
+        pointsPerUnit: config?.pointsPerUnit ?? null,
+        pointValue: config?.pointValue ?? null,
+        maxRedeemPoints,
+        redeemPoints: plan.points,
+        redeemDiscount: plan.discount,
+        promoDiscount,
+        discount: serverDiscount,
+        subtotal: round2(subtotal),
+        fees,
+        total: finalTotal,
+        earnType: config?.earnType ?? null,
+        earnValue: config?.earnValue ?? null,
+        pointsEarned: earned,
+        pointsAfterOrder: Math.max(0, balance - plan.points + earned),
       });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
