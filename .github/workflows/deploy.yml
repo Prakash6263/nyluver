@@ -45,8 +45,7 @@ jobs:
           port: 22
           script: |
             cd ~/nyluver-backend
-            npm install
-            npm run server:build || npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist || true
+            npm install --omit=dev
 
             # Write core .env vars (preserve any extra vars like WHATSAPP credentials)
             # Only set vars if they are not already present in .env
