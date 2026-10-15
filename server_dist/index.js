@@ -4284,6 +4284,11 @@ function setupErrorHandler(app2) {
   app.use("/admin", express.static(adminDir));
   app.use((req, res, next) => {
     if (req.path.startsWith("/admin")) {
+      const cleanPath = req.path.toLowerCase().replace(/\/$/, "");
+      if (cleanPath === "/admin/privacy" || cleanPath === "/admin/privacy.html" || cleanPath === "/admin/privacy-policy" || cleanPath === "/admin/privacy-policy.html" || cleanPath === "/admin/gift-parcel-privacy") {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.send(PRIVACY_POLICY_HTML);
+      }
       return res.sendFile(path.resolve(adminDir, "index.html"));
     }
     next();

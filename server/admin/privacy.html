@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gift Parcel Privacy Policy | Nyluver Luxury Florist & Gifting</title>
+  <meta name="description" content="Privacy Policy for Nyluver Gift Parcels and Anonymous Gifting Services. Learn how sender and recipient personal data is protected.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9F7F4;
+      --card-bg: #FFFFFF;
+      --text-main: #1B3A2D;
+      --text-secondary: #586B63;
+      --green-dark: #142E24;
+      --green-primary: #1B3A2D;
+      --green-light: #2C4D3E;
+      --gold-primary: #C9A96E;
+      --gold-light: #F3EBDD;
+      --gold-dark: #A98748;
+      --border-color: #E6E1D8;
+      --accent-badge: #EBF3EF;
+      --shadow-sm: 0 2px 8px rgba(20, 46, 36, 0.04);
+      --shadow-md: 0 8px 30px rgba(20, 46, 36, 0.07);
+      --font-en: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-ar: 'Cairo', 'Inter', sans-serif;
+      --font-serif: 'Playfair Display', Georgia, serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-en);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[dir="rtl"] body {
+      font-family: var(--font-ar);
+    }
+
+    /* ─── Top Announcement Bar ─── */
+    .top-banner {
+      background: var(--green-dark);
+      color: var(--gold-light);
+      font-size: 0.85rem;
+      padding: 8px 24px;
+      text-align: center;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    /* ─── Header ─── */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: all 0.3s ease;
+    }
+
+    .nav-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.85rem;
+      color: var(--green-primary);
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 4px;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background: var(--green-primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(27, 58, 45, 0.25);
+    }
+
+    .print-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-primary);
+    }
+
+    /* ─── Hero Section ─── */
+    .hero {
+      background: radial-gradient(circle at 80% 20%, rgba(201, 169, 110, 0.12) 0%, transparent 60%),
+                  linear-gradient(180deg, #FFFFFF 0%, var(--bg) 100%);
+      padding: 64px 24px 48px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-badge);
+      color: var(--green-primary);
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(27, 58, 45, 0.12);
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: 2.6rem;
+      color: var(--green-dark);
+      margin-bottom: 16px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    html[dir="rtl"] .hero h1 {
+      font-family: var(--font-ar);
+      font-weight: 700;
+    }
+
+    .hero-sub {
+      max-width: 680px;
+      margin: 0 auto 24px;
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      font-size: 0.85rem;
+      color: var(--gold-dark);
+      font-weight: 500;
+    }
+
+    /* ─── Main Content Layout ─── */
+    .content-wrapper {
+      max-width: 1140px;
+      margin: 40px auto 80px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .content-wrapper {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .toc-sidebar {
+        display: none;
+      }
+    }
+
+    /* ─── Sidebar Navigation ─── */
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toc-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold-dark);
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    .toc-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toc-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      display: block;
+    }
+
+    .toc-links a:hover, .toc-links a.active {
+      color: var(--green-primary);
+      background: var(--accent-badge);
+      font-weight: 600;
+    }
+
+    /* ─── Main Policy Cards ─── */
+    .policy-body {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .policy-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .policy-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(230, 225, 216, 0.7);
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .card-header h2 {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+
+    html[dir="rtl"] .card-header h2 {
+      font-family: var(--font-ar);
+    }
+
+    .policy-card p {
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      font-size: 0.97rem;
+    }
+
+    .policy-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .policy-list {
+      list-style: none;
+      margin: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .policy-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+    }
+
+    .policy-list li::before {
+      content: "✦";
+      color: var(--gold-primary);
+      font-size: 1.1rem;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .highlight-box {
+      background: #FAF7F2;
+      border-left: 4px solid var(--gold-primary);
+      padding: 16px 20px;
+      border-radius: 0 10px 10px 0;
+      margin: 18px 0;
+      color: var(--green-dark);
+      font-size: 0.93rem;
+    }
+
+    html[dir="rtl"] .highlight-box {
+      border-left: none;
+      border-right: 4px solid var(--gold-primary);
+      border-radius: 10px 0 0 10px;
+    }
+
+    .shield-badge {
+      display: inline-block;
+      background: #E8F5E9;
+      color: #2E7D32;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    html[dir="rtl"] .shield-badge {
+      margin-right: 0;
+      margin-left: 6px;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      background: var(--green-dark);
+      color: #FFFFFF;
+      padding: 48px 24px 32px;
+      margin-top: auto;
+      border-top: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    .footer-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-brand {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--gold-primary);
+    }
+
+    .footer-text {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-size: 0.85rem;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--gold-primary);
+    }
+
+    @media print {
+      header, .top-banner, .toc-sidebar, footer, .lang-toggle, .print-btn {
+        display: none !important;
+      }
+      .content-wrapper {
+        grid-template-columns: 1fr;
+        margin: 0;
+        padding: 0;
+      }
+      .policy-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Announcement -->
+  <div class="top-banner">
+    <span class="en-text">✦ Nyluver Luxury Gifting — Protected by End-to-End Privacy & Discreet Delivery Standards</span>
+    <span class="ar-text" style="display:none;">✦ نيلوفر للإهداء الفاخر — محمي بأعلى معايير الخصوصية والتوصيل السري التام</span>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <span class="brand-title">NYLUVER</span>
+        <span class="brand-tagline">Florist & Gifting</span>
+      </a>
+
+      <div class="header-actions">
+        <div class="lang-toggle" role="group" aria-label="Language Switcher">
+          <button type="button" class="lang-btn active" id="btn-en" onclick="setLanguage('en')">English</button>
+          <button type="button" class="lang-btn" id="btn-ar" onclick="setLanguage('ar')">العربية</button>
+        </div>
+
+        <button type="button" class="print-btn" onclick="window.print()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span class="en-text">Print</span>
+          <span class="ar-text" style="display:none;">طباعة</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="en-text">🔒 Gift Parcel & Anonymous Gifting Policy</span>
+      <span class="ar-text" style="display:none;">🔒 سياسة خصوصية طرود الهدايا والإهداء السري</span>
+    </div>
+    <h1 class="en-text">Gift Parcel Privacy Policy</h1>
+    <h1 class="ar-text" style="display:none;">سياسة خصوصية طرود الهدايا</h1>
+    <p class="hero-sub en-text">
+      At Nyluver, we honor the intimacy and surprise of gifting. This policy outlines our uncompromising commitment to protecting both sender identity and recipient confidentiality throughout the entire gifting lifecycle.
+    </p>
+    <p class="hero-sub ar-text" style="display:none;">
+      في نيلوفر، نحرص على قدسية المفاجأة والخصوصية في تقديم الهدايا. توضح هذه السياسة التزامنا الكامل بحماية هوية المرسل وسرية بيانات المستلم خلال كافة مراحل تجهيز وتسليم الطرد.
+    </p>
+    <div class="hero-meta">
+      <span class="en-text">Effective Date: October 2026</span>
+      <span class="ar-text" style="display:none;">تاريخ السريان: أكتوبر 2026</span>
+      <span>•</span>
+      <span class="en-text">Standard v2.0</span>
+      <span class="ar-text" style="display:none;">الإصدار 2.0</span>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <div class="content-wrapper">
+    <!-- Quick Nav Sidebar -->
+    <aside class="toc-sidebar">
+      <div class="toc-title en-text">Policy Sections</div>
+      <div class="toc-title ar-text" style="display:none;">أقسام السياسة</div>
+      <ul class="toc-links">
+        <li><a href="#anonymity" class="active"><span class="en-text">1. Sender Anonymity</span><span class="ar-text" style="display:none;">١. سرية هوية المرسل</span></a></li>
+        <li><a href="#recipient"><span class="en-text">2. Recipient Confidentiality</span><span class="ar-text" style="display:none;">٢. خصوصية بيانات المستلم</span></a></li>
+        <li><a href="#packaging"><span class="en-text">3. Parcel & Envelope Privacy</span><span class="ar-text" style="display:none;">٣. خصوصية الطرد والظرف</span></a></li>
+        <li><a href="#fleet"><span class="en-text">4. Internal Fleet & Dispatch</span><span class="ar-text" style="display:none;">٤. أسطول التوصيل الداخلي</span></a></li>
+        <li><a href="#whatsapp"><span class="en-text">5. WhatsApp Notifications</span><span class="ar-text" style="display:none;">٥. إشعارات واتساب الآمنة</span></a></li>
+        <li><a href="#security"><span class="en-text">6. Data Security & Storage</span><span class="ar-text" style="display:none;">٦. أمان وتخزين البيانات</span></a></li>
+        <li><a href="#support"><span class="en-text">7. Contact & Assistance</span><span class="ar-text" style="display:none;">٧. التواصل والدعم</span></a></li>
+      </ul>
+    </aside>
+
+    <!-- Policy Cards -->
+    <main class="policy-body">
+
+      <!-- 1. Sender Anonymity -->
+      <section id="anonymity" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">🎁</div>
+          <h2 class="en-text">1. Strict Sender Anonymity by Default</h2>
+          <h2 class="ar-text" style="display:none;">١. السرية التامة لهوية المرسل بشكل افتراضي</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Nyluver is built around the authentic luxury of surprise. Every gift parcel dispatched through our platform is strictly <strong>anonymous by default</strong>.
+          </p>
+          <div class="highlight-box">
+            <span class="shield-badge">GUARANTEE</span> The recipient of a gift parcel will <strong>never</strong> receive or be told the sender's real name, phone number, email address, or billing details.
+          </div>
+          <ul class="policy-list">
+            <li><strong>Card Message Control:</strong> The sender's identity is only revealed if the sender chooses to write their name or signature in the custom gift card message.</li>
+            <li><strong>Internal Operations Only:</strong> Sender credentials and payment details are restricted strictly to platform operations for order verification, compliance, and fraud prevention.</li>
+            <li><strong>No Digital Trace on Parcel:</strong> Physical parcel invoices and receipts provided with the parcel do not contain the sender's payment method, billing address, or personal identifiers.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            تتميز نيلوفر بتوفير تجربة إهداء فاخرة قائمة على المفاجأة والخصوصية. جميع طرود الهدايا المرسلة عبر منصتنا تكون <strong>سرية بالكامل للمرسل بشكل افتراضي</strong>.
+          </p>
+          <div class="highlight-box">
+            <span class="shield-badge">ضمان</span> لن يتم إفصاح أو كشف اسم المرسل، أو رقم هاتفه، أو بريده الإلكتروني، أو بيانات فواتيره إلى المستلم <strong>تحت أي ظرف</strong>.
+          </div>
+          <ul class="policy-list">
+            <li><strong>التحكم في بطاقة الإهداء:</strong> لا تظهر هوية المرسل إلا إذا اختار المرسل كتابة اسمه أو توقيعه بنفسه داخل رسالة بطاقة الهدية المرفقة.</li>
+            <li><strong>الوصول الداخلي فقط:</strong> بيانات المرسل والفاتورة متاحة حصرياً لطاقم العمليات وإدارة المنصة للتحقق من الطلب ومنع الاحتيال.</li>
+            <li><strong>خلو الطرد من الفواتير الحساسة:</strong> الطرد الفعلي لا يحتوي على أي فواتير تكشف وسيلة الدفع أو عنوان المرسل أو بياناته الشخصية.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 2. Recipient Confidentiality -->
+      <section id="recipient" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">📍</div>
+          <h2 class="en-text">2. Recipient Confidentiality & Location Safeguards</h2>
+          <h2 class="ar-text" style="display:none;">٢. سرية بيانات المستلم وحماية موقعه الجغرافي</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            We treat recipient details with the highest degree of confidentiality and data minimization:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Location Privacy:</strong> If the sender does not know the recipient's exact address and Nyluver coordinates the delivery directly with the recipient, the recipient's precise address/GPS coordinates are <strong>never disclosed back to the sender</strong>.</li>
+            <li><strong>Purpose-Bound Usage:</strong> Recipient contact details (phone number, WhatsApp, and delivery slot preference) are used solely to deliver the specific gift parcel and verify receipt.</li>
+            <li><strong>Right of Refusal:</strong> If a recipient declines to accept a delivery, we respect their decision immediately without disclosing sensitive recipient feedback or reasoning back to the sender.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            نتعامل مع بيانات المستلمين بأعلى درجات السرية ووفق مبدأ تقليل البيانات إلى الحد الأدنى:
+          </p>
+          <ul class="policy-list">
+            <li><strong>حماية الموقع الجغرافي:</strong> إذا لم يكن المرسل على علم بعنوان المستلم وتولت نيلوفر التنسيق مع المستلم، فإن العنوان الدقيق وإحداثيات الموقع <strong>لا تتم مشاركتها نهائياً مع المرسل</strong>.</li>
+            <li><strong>استخدام محدد للغرض:</strong> تُستخدم بيانات المستلم (رقم الهاتف، الواتساب، والوقت المفضل للاستلام) حصرياً لأجل تسليم الهدية والتأكد من وصولها.</li>
+            <li><strong>حق رفض الاستلام:</strong> إذا رغب المستلم في الاعتذار عن استلام الهدية، يتم احترام رغبته فوراً دون مشاركة أي مبررات أو تفاصيل خاصة للمستلم مع المرسل.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 3. Parcel & Envelope Privacy -->
+      <section id="packaging" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">✉️</div>
+          <h2 class="en-text">3. Parcel Packaging & Sealed Card Privacy</h2>
+          <h2 class="ar-text" style="display:none;">٣. خصوصية الطرد ومحتوى بطاقة الهدية المختومة</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Every Nyluver parcel is hand-crafted and packaged to preserve total discretion:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Sealed Envelopes:</strong> Gift cards and custom notes are sealed in luxury envelopes. Couriers and external handlers cannot view or inspect written personal messages.</li>
+            <li><strong>Discreet Outer Packaging:</strong> Outer parcel tags display only essential routing details (tracking reference, delivery slot, and recipient first name) without price tags or item cost breakdown.</li>
+            <li><strong>Tamper-Evident Seals:</strong> All gift boxes, flower wraps, and add-ons are secured with tamper-evident premium ribbons and seals.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            يتم تجهيز وتغليف كل طرد هدايا من نيلوفر بعناية فائقة لضمان الخصوصية والتميز:
+          </p>
+          <ul class="policy-list">
+            <li><strong>أظرف هدايا مختومة:</strong> توضع بطاقات التهنئة والرسائل المكتوبة داخل أظرف فاخرة ومختومة تماماً، بحيث لا يمكن للسائقين أو عمال التوصيل الاطلاع على نص الرسالة.</li>
+            <li><strong>تغليف خارجي سري:</strong> بطاقة التوصيل الخارجية لا تتضمن سوى رقم التتبع ووقت التوصيل والاسم الأول للمستلم، بدون أي أسعار أو تفاصيل تكلفة.</li>
+            <li><strong>أختام ضد العبث:</strong> جميع صناديق الهدايا وباقات الورد تُغلق بأشرطة وأختام فاخرة تضمن عدم فتح الطرد إلا من قبل المستلم النهائي.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 4. Internal Fleet & Dispatch -->
+      <section id="fleet" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">🚗</div>
+          <h2 class="en-text">4. Internal Delivery Fleet Protocol</h2>
+          <h2 class="ar-text" style="display:none;">٤. بروتوكول أسطول التوصيل الداخلي</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Nyluver operates an internal delivery fleet rather than unvetted gig economy drivers:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Data Masking for Drivers:</strong> Drivers receive only the destination address and direct recipient delivery instructions. They have zero access to sender identity, sender phone numbers, or order transaction values.</li>
+            <li><strong>Background Vetted Staff:</strong> All logistics personnel undergo strict background screening and sign confidentiality agreements concerning customer identities and VIP delivery destinations.</li>
+            <li><strong>No Driver App Data Leak:</strong> Task assignments are managed centrally through Nyluver's secure dispatch console.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            تعتمد نيلوفر على أسطول توصيل داخلي ومباشر بدلاً من الاعتماد على شركات توصيل عشوائية:
+          </p>
+          <ul class="policy-list">
+            <li><strong>حجب بيانات المرسل عن السائق:</strong> يحصل السائق فقط على وجهة التوصيل ورقم التواصل مع المستلم للتسليم، دون أي إمكانية للوصول إلى هوية المرسل أو بيانات الدفع.</li>
+            <li><strong>كادر موثوق ومفحوص:</strong> يخضع جميع سائقي التوصيل لفحص دقيق ويوقعون على اتفاقيات سرية تحمي خصوصية الزبائن ومواقع التوصيل الراقية.</li>
+            <li><strong>إدارة مركزية للطلبات:</strong> يتم توجيه مهام التوصيل عبر لوحة تحكم إدارية مركزية وآمنة دون تخزين بيانات الزبائن على أجهزة السائقين الشخصية.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 5. WhatsApp Notifications -->
+      <section id="whatsapp" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">💬</div>
+          <h2 class="en-text">5. WhatsApp & Digital Communications Protocol</h2>
+          <h2 class="ar-text" style="display:none;">٥. بروتوكول إشعارات واتساب والتواصل الرقمي</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            When coordinating delivery via official WhatsApp business channels:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Encrypted Coordination:</strong> All delivery confirmation messages ("You have a gift parcel waiting from Nyluver") are sent exclusively from our verified business account.</li>
+            <li><strong>Identity Shielding in Chats:</strong> Customer support representatives chatting with the recipient will never disclose the sender’s name even if directly asked by the recipient, upholding our anonymous gifting covenant.</li>
+            <li><strong>No Marketing Spams:</strong> Recipient phone numbers gathered for parcel dispatch are strictly excluded from general marketing broadcasts unless the recipient independently signs up for a Nyluver account.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            عند التنسيق لتسليم الهدية عبر قنوات واتساب الرسمية:
+          </p>
+          <ul class="policy-list">
+            <li><strong>تواصل موثق ومشفّر:</strong> يتم إرسال إشعارات استلام الهدية وتأكيد موعد التسليم عبر الحساب الرسمي الموثق لشركة نيلوفر.</li>
+            <li><strong>الالتزام بعدم الإفصاح في المحادثات:</strong> لن يقوم موظفو خدمة العملاء بالكشف عن اسم المرسل حتى في حال سؤال المستلم بشكل مباشر، التزاماً باتفاقية سرية الهدية.</li>
+            <li><strong>حظر الرسائل الترويجية:</strong> لا يتم استخدام أرقام المستلمين لأي أغراض إعلانية أو رسائل ترويجية ما لم يقم المستلم بالتسجيل بنفسه في المنصة.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 6. Data Security -->
+      <section id="security" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">🛡️</div>
+          <h2 class="en-text">6. Technical Safeguards & Data Retention</h2>
+          <h2 class="ar-text" style="display:none;">٦. الحماية التقنية وفترات حفظ البيانات</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            We implement stringent physical, procedural, and technological safeguards:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Encryption Standards:</strong> Data in transit is protected using TLS 1.3 encryption, and sensitive customer data is stored in isolated PostgreSQL clusters with row-level role boundaries.</li>
+            <li><strong>Zero Commercial Data Selling:</strong> Nyluver does not sell, license, or monetize customer or recipient personal data to third-party ad networks or brokers.</li>
+            <li><strong>Retention Policy:</strong> Delivery coordination logs and location notes are archived and stripped of active identifiers after 90 days following successful order delivery.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            نطبق أعلى المعايير الأمنية والتقنية لحماية خصوصيتكم:
+          </p>
+          <ul class="policy-list">
+            <li><strong>معايير التشفير:</strong> تشفير كامل لجميع البيانات أثناء النقل عبر بروتوكول TLS 1.3، مع عزل قواعد البيانات وتطبيق صلاحيات وصول صارمة.</li>
+            <li><strong>عدم بيع البيانات:</strong> تلتزم نيلوفر بعدم بيع أو مشاركة أو تأجير أي بيانات شخصية للمرسل أو المستلم مع أي جهات خارجية أو شبكات إعلانية.</li>
+            <li><strong>فترة الاحتفاظ بالبيانات:</strong> يتم أرشفة وإزالة البيانات التفصيلية لتنسيق التسليم بعد مرور 90 يوماً من تسليم الطلب بنجاح.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 7. Support & Inquiries -->
+      <section id="support" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">📞</div>
+          <h2 class="en-text">7. Contact & Privacy Inquiries</h2>
+          <h2 class="ar-text" style="display:none;">٧. التواصل واستفسارات الخصوصية</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            If you have questions regarding this Gift Parcel Privacy Policy or wish to exercise your rights regarding your personal information:
+          </p>
+          <div class="highlight-box">
+            <strong>Nyluver Data Protection Office</strong><br>
+            Email: <a href="mailto:privacy@nyluver.com" style="color:var(--green-primary); font-weight:600;">privacy@nyluver.com</a><br>
+            Support: <a href="mailto:support@nyluver.com" style="color:var(--green-primary); font-weight:600;">support@nyluver.com</a><br>
+            Tripoli Central Operations, Libya
+          </div>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            إذا كان لديكم أي استفسار حول سياسة خصوصية طرود الهدايا أو ترغبون في الاستفسار عن بياناتكم الشخصية:
+          </p>
+          <div class="highlight-box">
+            <strong>مكتب حماية البيانات — نيلوفر</strong><br>
+            البريد الإلكتروني للخصوصية: <a href="mailto:privacy@nyluver.com" style="color:var(--green-primary); font-weight:600;">privacy@nyluver.com</a><br>
+            خدمة العملاء: <a href="mailto:support@nyluver.com" style="color:var(--green-primary); font-weight:600;">support@nyluver.com</a><br>
+            العمليات المركزية، طرابلس، ليبيا
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-container">
+      <div>
+        <div class="footer-brand">NYLUVER</div>
+        <p class="footer-text en-text">Luxury Florist & Gifting. Uncompromising Elegance.</p>
+        <p class="footer-text ar-text" style="display:none;">أرقى تصاميم الزهور والهدايا الفاخرة.</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="/privacy-policy" class="en-text">Privacy Policy</a>
+        <a href="/privacy-policy" class="ar-text" style="display:none;">سياسة الخصوصية</a>
+        <span>•</span>
+        <a href="/admin" class="en-text">Admin Panel</a>
+        <a href="/admin" class="ar-text" style="display:none;">لوحة الإدارة</a>
+      </div>
+
+      <div class="footer-text">
+        © 2026 Nyluver Inc. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      const html = document.documentElement;
+      const isArabic = (lang === 'ar');
+      
+      html.lang = lang;
+      html.dir = isArabic ? 'rtl' : 'ltr';
+
+      document.getElementById('btn-en').classList.toggle('active', !isArabic);
+      document.getElementById('btn-ar').classList.toggle('active', isArabic);
+
+      document.querySelectorAll('.en-text').forEach(el => {
+        el.style.display = isArabic ? 'none' : '';
+      });
+
+      document.querySelectorAll('.ar-text').forEach(el => {
+        el.style.display = isArabic ? '' : 'none';
+      });
+
+      try {
+        localStorage.setItem('nyluver-privacy-lang', lang);
+      } catch (e) {}
+    }
+
+    // Initialize from saved preference or browser language
+    (function init() {
+      try {
+        const saved = localStorage.getItem('nyluver-privacy-lang');
+        if (saved === 'ar' || saved === 'en') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) {}
+      if (navigator.language && navigator.language.startsWith('ar')) {
+        setLanguage('ar');
+      }
+    })();
+
+    // Highlight TOC on scroll
+    const sections = document.querySelectorAll('.policy-card');
+    const tocLinks = document.querySelectorAll('.toc-links a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (window.pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      tocLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }, { passive: true });
+  </script>
+</body>
+</html>
