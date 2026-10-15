@@ -221,6 +221,14 @@ function setupErrorHandler(app: express.Application) {
 
   registerRoutes(app);
 
+  // Serve public static assets & privacy policy
+  const publicDir = path.resolve(process.cwd(), 'server', 'public');
+  const privacyPolicyPath = path.resolve(publicDir, 'privacy-policy.html');
+  app.use('/public', express.static(publicDir));
+  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy'], (_req: Request, res: Response) => {
+    return res.sendFile(privacyPolicyPath);
+  });
+
   // Serve admin panel
   const adminDir = path.resolve(process.cwd(), 'server', 'admin');
   app.use('/admin', express.static(adminDir));

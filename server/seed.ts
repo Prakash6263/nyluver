@@ -1,8 +1,29 @@
 import { db } from "./db";
 import * as s from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { hashPassword } from "./password";
 
 export async function seedDatabase() {
+  // Ensure default test customer account exists
+  try {
+    const existingTestUser = await db.select().from(s.users).where(eq(s.users.phone, '+218912345678'));
+    if (existingTestUser.length === 0) {
+      await db.insert(s.users).values({
+        phone: '+218912345678',
+        email: 'user@nyluver.com',
+        passwordHash: hashPassword('Password123'),
+        role: 'customer',
+        nameEn: 'Test Customer',
+        nameAr: 'عميل تجريبي',
+        language: 'en',
+        loyaltyPoints: 100,
+      });
+      console.log("Seeded test customer user (+218912345678 / user@nyluver.com)");
+    }
+  } catch (err: any) {
+    console.warn("Could not check/seed test user:", err.message);
+  }
+
   const existingCities = await db.select().from(s.cities);
   if (existingCities.length > 0) return;
 

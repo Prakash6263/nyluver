@@ -365,6 +365,7 @@ var init_schema = __esm({
       earnValue: decimal("earn_value", { precision: 5, scale: 2 }).notNull().default("10"),
       redemptionEnabled: boolean("redemption_enabled").notNull().default(false),
       pointsPerUnit: decimal("points_per_unit", { precision: 10, scale: 2 }).notNull().default("100"),
+      pointValue: decimal("point_value", { precision: 10, scale: 2 }).notNull().default("10"),
       updatedAt: timestamp("updated_at").defaultNow().notNull()
     });
     promoCodes = pgTable("promo_codes", {
@@ -500,8 +501,83 @@ var init_db = __esm({
       `ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS password_hash text`,
       `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS email text`,
       `ALTER TABLE IF EXISTS otp_codes ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'login'`,
-      `ALTER TABLE IF EXISTS otp_codes ALTER COLUMN phone DROP NOT NULL`
+      `ALTER TABLE IF EXISTS otp_codes ALTER COLUMN phone DROP NOT NULL`,
+      `ALTER TABLE IF EXISTS loyalty_config ADD COLUMN IF NOT EXISTS point_value numeric(10,2) NOT NULL DEFAULT '10'`,
+      // drizzle-kit push stops before it reaches this table, so every order that
+      // carried a promo code failed with `relation "promo_redemptions" does not
+      // exist`. The unique index is not optional: the claim relies on ON CONFLICT.
+      `CREATE TABLE IF NOT EXISTS promo_redemptions (
+     id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+     promo_code_id varchar NOT NULL REFERENCES promo_codes(id) ON DELETE CASCADE,
+     user_id varchar NOT NULL REFERENCES users(id),
+     order_id varchar REFERENCES orders(id) ON DELETE SET NULL,
+     created_at timestamp NOT NULL DEFAULT now()
+   )`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS promo_redemptions_promo_user_unique ON promo_redemptions (promo_code_id, user_id)`,
+      `CREATE INDEX IF NOT EXISTS promo_redemptions_promo_idx ON promo_redemptions (promo_code_id)`
     ];
+  }
+});
+
+// server/password.ts
+import crypto from "crypto";
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.scryptSync(password, salt, KEY_LENGTH);
+  return `${PREFIX}$${salt.toString("hex")}$${derived.toString("hex")}`;
+}
+function verifyPassword(password, stored) {
+  if (!stored) return false;
+  const parts = stored.split("$");
+  if (parts.length !== 3 || parts[0] !== PREFIX) return false;
+  const salt = Buffer.from(parts[1], "hex");
+  const expected = Buffer.from(parts[2], "hex");
+  if (!salt.length || !expected.length) return false;
+  const derived = crypto.scryptSync(password, salt, expected.length);
+  if (derived.length !== expected.length) return false;
+  return crypto.timingSafeEqual(derived, expected);
+}
+function validatePasswordStrength(password) {
+  if (typeof password !== "string" || !password) return "Password is required";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  }
+  return null;
+}
+function validOtpLength(value) {
+  const raw = Number(value);
+  return Number.isInteger(raw) && raw >= 4 && raw <= 8 ? raw : null;
+}
+function otpLength(channel = "app") {
+  const scoped = validOtpLength(
+    channel === "admin" ? process.env.OTP_LENGTH_ADMIN : process.env.OTP_LENGTH_APP
+  );
+  if (scoped) return scoped;
+  if (channel === "admin") {
+    const legacy = validOtpLength(process.env.OTP_LENGTH);
+    if (legacy) return legacy;
+  }
+  return DEFAULT_OTP_LENGTH[channel];
+}
+function defaultOtp(channel) {
+  const scoped = channel === "admin" ? process.env.DEFAULT_OTP_ADMIN : process.env.DEFAULT_OTP_APP;
+  return scoped || process.env.DEFAULT_OTP || void 0;
+}
+function generateNumericCode(length = otpLength()) {
+  let out = "";
+  while (out.length < length) {
+    out += crypto.randomInt(0, 10).toString();
+  }
+  return out;
+}
+var KEY_LENGTH, PREFIX, MIN_PASSWORD_LENGTH, DEFAULT_OTP_LENGTH;
+var init_password = __esm({
+  "server/password.ts"() {
+    "use strict";
+    KEY_LENGTH = 64;
+    PREFIX = "scrypt";
+    MIN_PASSWORD_LENGTH = 6;
+    DEFAULT_OTP_LENGTH = { app: 4, admin: 6 };
   }
 });
 
@@ -510,7 +586,26 @@ var seed_exports = {};
 __export(seed_exports, {
   seedDatabase: () => seedDatabase
 });
+import { eq as eq3 } from "drizzle-orm";
 async function seedDatabase() {
+  try {
+    const existingTestUser = await db.select().from(users).where(eq3(users.phone, "+218912345678"));
+    if (existingTestUser.length === 0) {
+      await db.insert(users).values({
+        phone: "+218912345678",
+        email: "user@nyluver.com",
+        passwordHash: hashPassword("Password123"),
+        role: "customer",
+        nameEn: "Test Customer",
+        nameAr: "\u0639\u0645\u064A\u0644 \u062A\u062C\u0631\u064A\u0628\u064A",
+        language: "en",
+        loyaltyPoints: 100
+      });
+      console.log("Seeded test customer user (+218912345678 / user@nyluver.com)");
+    }
+  } catch (err) {
+    console.warn("Could not check/seed test user:", err.message);
+  }
   const existingCities = await db.select().from(cities);
   if (existingCities.length > 0) return;
   console.log("Seeding database...");
@@ -630,6 +725,7 @@ var init_seed = __esm({
     "use strict";
     init_db();
     init_schema();
+    init_password();
   }
 });
 
@@ -1118,10 +1214,38 @@ var storage = {
     const [config] = await db.insert(loyaltyConfig).values(data).returning();
     return config;
   },
+  // The ledger row and the balance must move together: a crash between the two
+  // statements used to leave a customer with a history and no points (or worse,
+  // with points and no history).
   async addLoyaltyEntry(data) {
-    const [entry] = await db.insert(loyaltyLedger).values(data).returning();
-    await db.update(users).set({ loyaltyPoints: sql2`${users.loyaltyPoints} + ${data.points}` }).where(eq(users.id, data.userId));
-    return entry;
+    return await db.transaction(async (tx) => {
+      const [entry] = await tx.insert(loyaltyLedger).values(data).returning();
+      await tx.update(users).set({ loyaltyPoints: sql2`${users.loyaltyPoints} + ${data.points}` }).where(eq(users.id, data.userId));
+      return entry;
+    });
+  },
+  // Spends points from a customer's balance. The balance guard sits in the WHERE
+  // clause, so two orders placed at the same moment cannot spend the same points
+  // twice. Returns null when the balance no longer covers the spend.
+  async redeemLoyaltyPoints(data) {
+    const spend = Math.floor(Number(data.points) || 0);
+    if (spend <= 0) return null;
+    return await db.transaction(async (tx) => {
+      const [user] = await tx.update(users).set({ loyaltyPoints: sql2`${users.loyaltyPoints} - ${spend}` }).where(and(eq(users.id, data.userId), gte(users.loyaltyPoints, spend))).returning();
+      if (!user) return null;
+      const [entry] = await tx.insert(loyaltyLedger).values({
+        userId: data.userId,
+        orderId: data.orderId ?? null,
+        points: -spend,
+        type: "redeem",
+        description: data.description
+      }).returning();
+      return entry;
+    });
+  },
+  // Links a redemption to the order once the order row exists.
+  async attachLoyaltyOrder(entryId, orderId) {
+    await db.update(loyaltyLedger).set({ orderId }).where(eq(loyaltyLedger.id, entryId));
   },
   async getLoyaltyLedger(userId) {
     return db.select().from(loyaltyLedger).where(eq(loyaltyLedger.userId, userId)).orderBy(desc(loyaltyLedger.createdAt));
@@ -1493,45 +1617,8 @@ function renderReceiptHtml(order) {
 </html>`;
 }
 
-// server/password.ts
-import crypto from "crypto";
-var KEY_LENGTH = 64;
-var PREFIX = "scrypt";
-var MIN_PASSWORD_LENGTH = 6;
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16);
-  const derived = crypto.scryptSync(password, salt, KEY_LENGTH);
-  return `${PREFIX}$${salt.toString("hex")}$${derived.toString("hex")}`;
-}
-function verifyPassword(password, stored) {
-  if (!stored) return false;
-  const parts = stored.split("$");
-  if (parts.length !== 3 || parts[0] !== PREFIX) return false;
-  const salt = Buffer.from(parts[1], "hex");
-  const expected = Buffer.from(parts[2], "hex");
-  if (!salt.length || !expected.length) return false;
-  const derived = crypto.scryptSync(password, salt, expected.length);
-  if (derived.length !== expected.length) return false;
-  return crypto.timingSafeEqual(derived, expected);
-}
-function validatePasswordStrength(password) {
-  if (typeof password !== "string" || !password) return "Password is required";
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-  }
-  return null;
-}
-function otpLength() {
-  const raw = Number(process.env.OTP_LENGTH);
-  return Number.isInteger(raw) && raw >= 4 && raw <= 8 ? raw : 6;
-}
-function generateNumericCode(length = otpLength()) {
-  let out = "";
-  while (out.length < length) {
-    out += crypto.randomInt(0, 10).toString();
-  }
-  return out;
-}
+// server/routes.ts
+init_password();
 
 // server/mailer.ts
 import nodemailer from "nodemailer";
@@ -1636,14 +1723,61 @@ async function deliverVerificationCode(opts) {
   return { email: sent.success };
 }
 
+// server/loyalty.ts
+var POINTS_PER_UNIT = 100;
+var UNIT_VALUE_LYD = 10;
+var POINTS_PER_LYD = POINTS_PER_UNIT / UNIT_VALUE_LYD;
+var POINT_VALUE_LYD = UNIT_VALUE_LYD / POINTS_PER_UNIT;
+function num(value) {
+  const parsed = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+function round2(value) {
+  return Math.round(value * 100) / 100;
+}
+function pointsEarned(config, paidTotal) {
+  if (!config) return 0;
+  const rate = num(config.earnValue);
+  if (rate <= 0 || paidTotal <= 0) return 0;
+  const earned = config.earnType === "fixed" ? rate : paidTotal * rate / 100;
+  return Math.max(0, Math.floor(earned));
+}
+function pointsValue(points) {
+  if (points <= 0) return 0;
+  return round2(points / POINTS_PER_LYD);
+}
+function maxPointsForValue(value) {
+  if (value <= 0) return 0;
+  return Math.max(0, Math.floor(Number((value * POINTS_PER_LYD).toFixed(6))));
+}
+function redemptionReady(config) {
+  return config?.redemptionEnabled === true;
+}
+function planRedemption(balance, requestedPoints, discountRoom) {
+  const none = { points: 0, discount: 0 };
+  const room = round2(num(discountRoom));
+  if (room <= 0) return none;
+  let points = Math.floor(num(requestedPoints));
+  if (points <= 0) return none;
+  points = Math.min(points, Math.floor(num(balance)), maxPointsForValue(room));
+  if (points <= 0) return none;
+  let discount = pointsValue(points);
+  if (discount > room) {
+    points -= 1;
+    discount = pointsValue(points);
+  }
+  if (points <= 0 || discount <= 0) return none;
+  if (discount > room) discount = room;
+  return { points, discount };
+}
+
 // server/routes.ts
 var PgSession = connectPgSimple(session);
 var sessionPool = new pg2.Pool({ connectionString: process.env.DATABASE_URL });
 var OTP_TTL_SECONDS = 5 * 60;
 var OTP_RESEND_AFTER_SECONDS = 60;
-function generateOtp() {
-  if (process.env.DEFAULT_OTP) return process.env.DEFAULT_OTP;
-  return generateNumericCode(otpLength());
+function generateOtp(channel) {
+  return defaultOtp(channel) ?? generateNumericCode(otpLength(channel));
 }
 function generateToken() {
   return crypto2.randomBytes(32).toString("hex");
@@ -1718,8 +1852,8 @@ async function appAuth(req, res, next) {
 function withDefaultMaxUses(body) {
   const data = { ...body || {} };
   const raw = data.maxUses;
-  const num = raw === null || raw === void 0 || raw === "" ? NaN : Number(raw);
-  data.maxUses = Number.isFinite(num) && num > 0 ? Math.trunc(num) : 1;
+  const num2 = raw === null || raw === void 0 || raw === "" ? NaN : Number(raw);
+  data.maxUses = Number.isFinite(num2) && num2 > 0 ? Math.trunc(num2) : 1;
   return data;
 }
 function promoRefsFromBody(body) {
@@ -1737,9 +1871,15 @@ function promoRefsFromBody(body) {
   ];
   return raw.filter((v) => typeof v === "string" && v.trim()).map((v) => v.trim());
 }
-async function redeemPromoForOrder(opts) {
+function promoDiscountValue(promo, orderAmount) {
+  let discount = promo.type === "percentage" ? orderAmount * parseFloat(promo.value) / 100 : parseFloat(promo.value);
+  if (!Number.isFinite(discount) || discount < 0) discount = 0;
+  if (discount > orderAmount) discount = orderAmount;
+  return Math.round(discount * 100) / 100;
+}
+async function resolvePromoForOrder(opts) {
   const refs = promoRefsFromBody(opts.body);
-  if (!refs.length) return null;
+  if (!refs.length) return { promo: null, discount: 0 };
   let promo = null;
   for (const ref of refs) {
     promo = await storage.getPromoById(ref);
@@ -1759,23 +1899,26 @@ async function redeemPromoForOrder(opts) {
   if (promo.categoryId && Array.isArray(opts.categoryIds) && !opts.categoryIds.includes(promo.categoryId)) {
     return { error: "Promo not applicable to items in cart", status: 400 };
   }
-  let discount = promo.type === "percentage" ? opts.orderAmount * parseFloat(promo.value) / 100 : parseFloat(promo.value);
-  if (!Number.isFinite(discount) || discount < 0) discount = 0;
-  if (discount > opts.orderAmount) discount = opts.orderAmount;
-  const redeemed = await storage.redeemPromoCode(promo.id, opts.userId);
+  return { promo, discount: promoDiscountValue(promo, opts.orderAmount) };
+}
+async function redeemPromoForOrder(opts) {
+  const resolved = await resolvePromoForOrder(opts);
+  if (resolved.error) return resolved;
+  if (!resolved.promo) return null;
+  const redeemed = await storage.redeemPromoCode(resolved.promo.id, opts.userId);
   if (redeemed.error === "already_used") return { error: "Promo code already used by this user", status: 400 };
   if (redeemed.error === "exhausted") return { error: "Code exhausted", status: 400 };
-  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: Math.round(discount * 100) / 100 };
+  return { promo: redeemed.promo, redemptionId: redeemed.redemptionId, discount: resolved.discount };
 }
 function reconcileDiscount(body, serverDiscount) {
-  const num = (v) => {
+  const num2 = (v) => {
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : 0;
   };
-  const clientDiscount = num(body?.discount);
-  const clientTotal = num(body?.total);
-  const subtotal = num(body?.subtotal);
-  const fees = num(body?.deliveryFee) + num(body?.expressFee) + num(body?.vatAmount);
+  const clientDiscount = num2(body?.discount);
+  const clientTotal = num2(body?.total);
+  const subtotal = num2(body?.subtotal);
+  const fees = num2(body?.deliveryFee) + num2(body?.expressFee) + num2(body?.vatAmount);
   const appliedDiscount = serverDiscount;
   let finalTotal = clientTotal + clientDiscount - serverDiscount;
   let source = "client";
@@ -1785,6 +1928,48 @@ function reconcileDiscount(body, serverDiscount) {
   }
   if (finalTotal < 0) finalTotal = 0;
   return { clientDiscount, appliedDiscount, finalTotal: Math.round(finalTotal * 100) / 100, source };
+}
+async function chargeLoyaltyRedemption(userId, requestedPoints, discountRoom) {
+  const nothing = { points: 0, discount: 0, entryId: null };
+  const config = await storage.getLoyaltyConfig();
+  if (!redemptionReady(config)) return nothing;
+  const user = await storage.getUser(userId);
+  const plan = planRedemption(user?.loyaltyPoints || 0, requestedPoints, discountRoom);
+  if (plan.points <= 0) return nothing;
+  const entry = await storage.redeemLoyaltyPoints({
+    userId,
+    points: plan.points,
+    description: `Redeemed ${plan.points} points for ${plan.discount} off`
+  });
+  if (!entry) return nothing;
+  return { points: plan.points, discount: plan.discount, entryId: entry.id };
+}
+async function refundLoyaltyRedemption(userId, redemption) {
+  if (redemption.points <= 0) return;
+  await storage.addLoyaltyEntry({
+    userId,
+    points: redemption.points,
+    type: "refund",
+    description: "Redemption reversed (order was not stored)"
+  }).catch((e) => console.error("[loyalty] Failed to refund redemption:", e.message));
+}
+async function creditLoyaltyEarn(userId, orderId, orderNumber, paidTotal) {
+  try {
+    const config = await storage.getLoyaltyConfig();
+    const points = pointsEarned(config, paidTotal);
+    if (points <= 0) return 0;
+    await storage.addLoyaltyEntry({
+      userId,
+      orderId,
+      points,
+      type: "earn",
+      description: `Earned from order ${orderNumber}`
+    });
+    return points;
+  } catch (e) {
+    console.error("[loyalty] Failed to credit points for order " + orderNumber + ":", e.message);
+    return 0;
+  }
 }
 function registerRoutes(app2) {
   app2.use(session({
@@ -1827,7 +2012,7 @@ function registerRoutes(app2) {
       const existing = await storage.getRecentValidOtpForEmail(cleanEmail, "register");
       let emailSent = true;
       if (!existing) {
-        const code = generateOtp();
+        const code = generateOtp("app");
         await storage.createOtpFor({ email: cleanEmail, phone: cleanPhone, code, purpose: "register" });
         const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: "register" });
         emailSent = result.email;
@@ -1944,17 +2129,17 @@ function registerRoutes(app2) {
       if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
       const cleanEmail = normalizeEmail(email);
       const user = await storage.getUserByEmail(cleanEmail);
-      let emailSent = false;
-      if (user) {
-        const existing = await storage.getRecentValidOtpForEmail(cleanEmail, "password_reset");
-        if (!existing) {
-          const code = generateOtp();
-          await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: "password_reset" });
-          const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: "password_reset" });
-          emailSent = result.email;
-        }
-      } else {
+      if (!user) {
         console.warn(`[AUTH] Password reset requested for unknown email: ${cleanEmail}`);
+        return res.status(400).json({ error: "invalid_email", message: "No account found with this email" });
+      }
+      let emailSent = true;
+      const existing = await storage.getRecentValidOtpForEmail(cleanEmail, "password_reset");
+      if (!existing) {
+        const code = generateOtp("app");
+        await storage.createOtpFor({ email: cleanEmail, phone: user.phone, code, purpose: "password_reset" });
+        const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: "password_reset" });
+        emailSent = result.email;
       }
       res.json({
         success: true,
@@ -1981,7 +2166,7 @@ function registerRoutes(app2) {
       if (codePurpose === "password_reset" && !user) {
         return res.status(400).json({ error: "invalid_email", message: "No account found with this email" });
       }
-      const code = generateOtp();
+      const code = generateOtp("app");
       await storage.createOtpFor({ email: cleanEmail, phone: user?.phone ?? null, code, purpose: codePurpose });
       const result = await deliverVerificationCode({ email: cleanEmail, code, purpose: codePurpose });
       res.json({ success: true, email: cleanEmail, purpose: codePurpose, emailSent: result.email });
@@ -2065,10 +2250,10 @@ function registerRoutes(app2) {
         console.log(`[ADMIN] Reusing recent code for ${phone}`);
         return res.json({ success: true, message: "OTP sent" });
       }
-      const code = generateOtp();
+      const code = generateOtp("admin");
       await storage.createOtp(phone, code);
       console.log(`[ADMIN] OTP code for ${phone}: ${code}`);
-      if (!process.env.DEFAULT_OTP) {
+      if (!defaultOtp("admin")) {
         const result = await sendOtp(phone, code);
         if (!result.success) {
           console.warn(`[ADMIN] WhatsApp delivery failed for ${phone}. Code is in server logs.`);
@@ -2256,11 +2441,14 @@ function registerRoutes(app2) {
   app2.post("/api/orders", customerAuth, async (req, res) => {
     try {
       const sess = req.session;
-      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress } = req.body;
+      const { items, recipientName, recipientPhone, address, cityId, slotId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, vatAmount, total, totalUSD, isExpress, redeemPoints } = req.body;
       const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
       const promoResult = await redeemPromoForOrder({ body: req.body, orderAmount, userId: sess.userId, categoryIds: req.body.categoryIds });
       if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
-      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0);
+      const promoDiscount = promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0;
+      const redemption = await chargeLoyaltyRedemption(sess.userId, redeemPoints, orderAmount - promoDiscount);
+      const serverDiscount = round2(promoDiscount + redemption.discount);
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, serverDiscount);
       if (!promoResult && clientDiscount > 0) {
         console.warn("[promo] /api/orders got a discount without any promo reference. body keys: " + Object.keys(req.body || {}).join(","));
       }
@@ -2294,23 +2482,13 @@ function registerRoutes(app2) {
       } catch (err) {
         if (promoResult) await storage.releasePromoUse(promoResult.promo.id, sess.userId).catch(() => {
         });
+        await refundLoyaltyRedemption(sess.userId, redemption);
         throw err;
       }
       if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
+      if (redemption.entryId) await storage.attachLoyaltyOrder(redemption.entryId, order.id);
       if (slotId) await storage.incrementSlotUsed(slotId);
-      const loyaltyConfig2 = await storage.getLoyaltyConfig();
-      if (loyaltyConfig2) {
-        const points = Math.floor(total * parseFloat(loyaltyConfig2.earnValue) / 100);
-        if (points > 0) {
-          await storage.addLoyaltyEntry({
-            userId: sess.userId,
-            orderId: order.id,
-            points,
-            type: "earn",
-            description: `Earned from order ${order.orderNumber}`
-          });
-        }
-      }
+      await creditLoyaltyEarn(sess.userId, order.id, order.orderNumber, finalTotal);
       const sender = await storage.getUser(sess.userId);
       if (sender?.phone) {
         sendOrderConfirmation(sender.phone, order.orderNumber).catch((e) => console.error("[WhatsApp] Order confirmation failed:", e.message));
@@ -2326,13 +2504,16 @@ function registerRoutes(app2) {
   app2.post("/api/orders/app", appAuth, async (req, res) => {
     try {
       const user = req.appUser;
-      const { items, recipientName, recipientPhone, address, cityId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, total, totalUSD, isExpress } = req.body;
+      const { items, recipientName, recipientPhone, address, cityId, slotDate, slotTime, cardMessage, paymentMethod, subtotal, deliveryFee, expressFee, discount, total, totalUSD, isExpress, redeemPoints } = req.body;
       const defaultCity = await storage.getCities().then((cities2) => cities2[0]);
       const resolvedCityId = cityId || defaultCity?.id;
       const orderAmount = parseFloat(subtotal ?? total ?? 0) || 0;
       const promoResult = await redeemPromoForOrder({ body: req.body, orderAmount, userId: user.id, categoryIds: req.body.categoryIds });
       if (promoResult?.error) return res.status(promoResult.status || 400).json({ error: promoResult.error });
-      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0);
+      const promoDiscount = promoResult ? promoResult.discount : parseFloat(discount ?? 0) || 0;
+      const redemption = await chargeLoyaltyRedemption(user.id, redeemPoints, orderAmount - promoDiscount);
+      const serverDiscount = round2(promoDiscount + redemption.discount);
+      const { clientDiscount, appliedDiscount, finalTotal, source } = reconcileDiscount(req.body, serverDiscount);
       if (!promoResult && clientDiscount > 0) {
         console.warn("[promo] /api/orders/app got a discount without any promo reference. body keys: " + Object.keys(req.body || {}).join(","));
       }
@@ -2365,9 +2546,12 @@ function registerRoutes(app2) {
       } catch (err) {
         if (promoResult) await storage.releasePromoUse(promoResult.promo.id, user.id).catch(() => {
         });
+        await refundLoyaltyRedemption(user.id, redemption);
         throw err;
       }
       if (promoResult) await storage.attachPromoRedemption(promoResult.redemptionId, order.id);
+      if (redemption.entryId) await storage.attachLoyaltyOrder(redemption.entryId, order.id);
+      await creditLoyaltyEarn(user.id, order.id, order.orderNumber, finalTotal);
       if (user.phone) {
         sendOrderConfirmation(user.phone, order.orderNumber).catch((e) => console.error("[WhatsApp] Order confirmation failed:", e.message));
       }
@@ -2425,6 +2609,77 @@ function registerRoutes(app2) {
       const ledger = await storage.getLoyaltyLedger(sess.userId);
       const user = await storage.getUser(sess.userId);
       res.json({ points: user?.loyaltyPoints || 0, ledger });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.get("/api/loyalty/app", appAuth, async (req, res) => {
+    try {
+      const user = req.appUser;
+      const [config, ledger] = await Promise.all([
+        storage.getLoyaltyConfig(),
+        storage.getLoyaltyLedger(user.id)
+      ]);
+      res.json({
+        points: user?.loyaltyPoints || 0,
+        redemptionEnabled: redemptionReady(config),
+        // The rate is fixed in code, but it is still reported so the app can
+        // describe the points without hardcoding a number of its own.
+        pointsPerUnit: POINTS_PER_UNIT.toFixed(2),
+        pointValue: UNIT_VALUE_LYD.toFixed(2),
+        earnType: config?.earnType ?? null,
+        earnValue: config?.earnValue ?? null,
+        ledger
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  app2.post("/api/loyalty/app/preview", appAuth, async (req, res) => {
+    try {
+      const user = req.appUser;
+      const body = req.body || {};
+      const parse = (v) => {
+        const n = parseFloat(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const subtotal = parse(body.subtotal ?? body.total);
+      const fees = round2(parse(body.deliveryFee) + parse(body.expressFee) + parse(body.vatAmount));
+      const resolved = await resolvePromoForOrder({
+        body,
+        orderAmount: subtotal,
+        userId: user.id,
+        categoryIds: body.categoryIds
+      });
+      if (resolved.error) return res.status(resolved.status || 400).json({ error: resolved.error });
+      const promoDiscount = resolved.promo ? resolved.discount : parse(body.discount);
+      const config = await storage.getLoyaltyConfig();
+      const balance = user?.loyaltyPoints || 0;
+      const room = Math.max(0, subtotal - promoDiscount);
+      const maxRedeemPoints = redemptionReady(config) ? Math.min(balance, maxPointsForValue(room)) : 0;
+      const plan = planRedemption(balance, body.redeemPoints, room);
+      const serverDiscount = round2(promoDiscount + plan.discount);
+      const { finalTotal } = reconcileDiscount(body, serverDiscount);
+      const earned = pointsEarned(config, finalTotal);
+      res.json({
+        currency: "LYD",
+        points: balance,
+        redemptionEnabled: redemptionReady(config),
+        pointsPerUnit: POINTS_PER_UNIT.toFixed(2),
+        pointValue: UNIT_VALUE_LYD.toFixed(2),
+        maxRedeemPoints,
+        redeemPoints: plan.points,
+        redeemDiscount: plan.discount,
+        promoDiscount,
+        discount: serverDiscount,
+        subtotal: round2(subtotal),
+        fees,
+        total: finalTotal,
+        earnType: config?.earnType ?? null,
+        earnValue: config?.earnValue ?? null,
+        pointsEarned: earned,
+        pointsAfterOrder: Math.max(0, balance - plan.points + earned)
+      });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -2723,7 +2978,12 @@ function registerRoutes(app2) {
   });
   app2.put("/api/admin/loyalty/config", adminAuth, async (req, res) => {
     try {
-      res.json(await storage.updateLoyaltyConfig(req.body));
+      const { earnType, earnValue, redemptionEnabled } = req.body || {};
+      const patch = {};
+      if (earnType !== void 0) patch.earnType = earnType === "fixed" ? "fixed" : "percentage";
+      if (earnValue !== void 0) patch.earnValue = earnValue;
+      if (redemptionEnabled !== void 0) patch.redemptionEnabled = redemptionEnabled === true || redemptionEnabled === "true";
+      res.json(await storage.updateLoyaltyConfig(patch));
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
@@ -3171,6 +3431,12 @@ function setupErrorHandler(app2) {
   setupRequestLogging(app);
   configureExpoAndLanding(app);
   registerRoutes(app);
+  const publicDir = path.resolve(process.cwd(), "server", "public");
+  const privacyPolicyPath = path.resolve(publicDir, "privacy-policy.html");
+  app.use("/public", express.static(publicDir));
+  app.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy"], (_req, res) => {
+    return res.sendFile(privacyPolicyPath);
+  });
   const adminDir = path.resolve(process.cwd(), "server", "admin");
   app.use("/admin", express.static(adminDir));
   app.use((req, res, next) => {

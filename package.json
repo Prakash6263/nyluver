@@ -7,7 +7,8 @@
     "build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist",
     "start": "cross-env NODE_ENV=production node server_dist/index.js",
     "server:build": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=server_dist",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "deploy:vps": "node scripts/deploy_vps.mjs"
   },
   "dependencies": {
     "@types/connect-pg-simple": "^7.0.3",

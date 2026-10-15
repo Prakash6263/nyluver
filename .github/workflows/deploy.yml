@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: 22
-          source: "server_dist/,package.json,package-lock.json,ecosystem.config.cjs,server/admin/index.html,server/templates/,scripts/check-smtp.mjs"
+          source: "server_dist/,package.json,package-lock.json,ecosystem.config.cjs,server/admin/index.html,server/templates/,server/public/,scripts/check-smtp.mjs"
           target: "~/nyluver-backend"
           strip_components: 0
 
