@@ -732,10 +732,6 @@ var init_seed = __esm({
 // server/index.ts
 import express from "express";
 
-// server/routes.ts
-import * as fs from "fs";
-import * as path from "path";
-
 // server/storage.ts
 init_db();
 init_schema();
@@ -1775,6 +1771,845 @@ function planRedemption(balance, requestedPoints, discountRoom) {
   return { points, discount };
 }
 
+// server/privacy-html.ts
+var PRIVACY_POLICY_HTML = `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gift Parcel Privacy Policy | Nyluver Luxury Florist & Gifting</title>
+  <meta name="description" content="Privacy Policy for Nyluver Gift Parcels and Anonymous Gifting Services. Learn how sender and recipient personal data is protected.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9F7F4;
+      --card-bg: #FFFFFF;
+      --text-main: #1B3A2D;
+      --text-secondary: #586B63;
+      --green-dark: #142E24;
+      --green-primary: #1B3A2D;
+      --green-light: #2C4D3E;
+      --gold-primary: #C9A96E;
+      --gold-light: #F3EBDD;
+      --gold-dark: #A98748;
+      --border-color: #E6E1D8;
+      --accent-badge: #EBF3EF;
+      --shadow-sm: 0 2px 8px rgba(20, 46, 36, 0.04);
+      --shadow-md: 0 8px 30px rgba(20, 46, 36, 0.07);
+      --font-en: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-ar: 'Cairo', 'Inter', sans-serif;
+      --font-serif: 'Playfair Display', Georgia, serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-en);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[dir="rtl"] body {
+      font-family: var(--font-ar);
+    }
+
+    /* \u2500\u2500\u2500 Top Announcement Bar \u2500\u2500\u2500 */
+    .top-banner {
+      background: var(--green-dark);
+      color: var(--gold-light);
+      font-size: 0.85rem;
+      padding: 8px 24px;
+      text-align: center;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    /* \u2500\u2500\u2500 Header \u2500\u2500\u2500 */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: all 0.3s ease;
+    }
+
+    .nav-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.85rem;
+      color: var(--green-primary);
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 4px;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background: var(--green-primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(27, 58, 45, 0.25);
+    }
+
+    .print-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .print-btn:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-primary);
+    }
+
+    /* \u2500\u2500\u2500 Hero Section \u2500\u2500\u2500 */
+    .hero {
+      background: radial-gradient(circle at 80% 20%, rgba(201, 169, 110, 0.12) 0%, transparent 60%),
+                  linear-gradient(180deg, #FFFFFF 0%, var(--bg) 100%);
+      padding: 64px 24px 48px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-badge);
+      color: var(--green-primary);
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(27, 58, 45, 0.12);
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: 2.6rem;
+      color: var(--green-dark);
+      margin-bottom: 16px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    html[dir="rtl"] .hero h1 {
+      font-family: var(--font-ar);
+      font-weight: 700;
+    }
+
+    .hero-sub {
+      max-width: 680px;
+      margin: 0 auto 24px;
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      font-size: 0.85rem;
+      color: var(--gold-dark);
+      font-weight: 500;
+    }
+
+    /* \u2500\u2500\u2500 Main Content Layout \u2500\u2500\u2500 */
+    .content-wrapper {
+      max-width: 1140px;
+      margin: 40px auto 80px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .content-wrapper {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .toc-sidebar {
+        display: none;
+      }
+    }
+
+    /* \u2500\u2500\u2500 Sidebar Navigation \u2500\u2500\u2500 */
+    .toc-sidebar {
+      position: sticky;
+      top: 100px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toc-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold-dark);
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    .toc-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toc-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      display: block;
+    }
+
+    .toc-links a:hover, .toc-links a.active {
+      color: var(--green-primary);
+      background: var(--accent-badge);
+      font-weight: 600;
+    }
+
+    /* \u2500\u2500\u2500 Main Policy Cards \u2500\u2500\u2500 */
+    .policy-body {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .policy-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .policy-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(230, 225, 216, 0.7);
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .card-header h2 {
+      font-family: var(--font-serif);
+      font-size: 1.45rem;
+      color: var(--green-dark);
+      font-weight: 600;
+    }
+
+    html[dir="rtl"] .card-header h2 {
+      font-family: var(--font-ar);
+    }
+
+    .policy-card p {
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      font-size: 0.97rem;
+    }
+
+    .policy-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .policy-list {
+      list-style: none;
+      margin: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .policy-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+    }
+
+    .policy-list li::before {
+      content: "\u2726";
+      color: var(--gold-primary);
+      font-size: 1.1rem;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .highlight-box {
+      background: #FAF7F2;
+      border-left: 4px solid var(--gold-primary);
+      padding: 16px 20px;
+      border-radius: 0 10px 10px 0;
+      margin: 18px 0;
+      color: var(--green-dark);
+      font-size: 0.93rem;
+    }
+
+    html[dir="rtl"] .highlight-box {
+      border-left: none;
+      border-right: 4px solid var(--gold-primary);
+      border-radius: 10px 0 0 10px;
+    }
+
+    .shield-badge {
+      display: inline-block;
+      background: #E8F5E9;
+      color: #2E7D32;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    html[dir="rtl"] .shield-badge {
+      margin-right: 0;
+      margin-left: 6px;
+    }
+
+    /* \u2500\u2500\u2500 Footer \u2500\u2500\u2500 */
+    footer {
+      background: var(--green-dark);
+      color: #FFFFFF;
+      padding: 48px 24px 32px;
+      margin-top: auto;
+      border-top: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    .footer-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-brand {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--gold-primary);
+    }
+
+    .footer-text {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-size: 0.85rem;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--gold-primary);
+    }
+
+    @media print {
+      header, .top-banner, .toc-sidebar, footer, .lang-toggle, .print-btn {
+        display: none !important;
+      }
+      .content-wrapper {
+        grid-template-columns: 1fr;
+        margin: 0;
+        padding: 0;
+      }
+      .policy-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Announcement -->
+  <div class="top-banner">
+    <span class="en-text">\u2726 Nyluver Luxury Gifting \u2014 Protected by End-to-End Privacy & Discreet Delivery Standards</span>
+    <span class="ar-text" style="display:none;">\u2726 \u0646\u064A\u0644\u0648\u0641\u0631 \u0644\u0644\u0625\u0647\u062F\u0627\u0621 \u0627\u0644\u0641\u0627\u062E\u0631 \u2014 \u0645\u062D\u0645\u064A \u0628\u0623\u0639\u0644\u0649 \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629 \u0648\u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u0633\u0631\u064A \u0627\u0644\u062A\u0627\u0645</span>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <span class="brand-title">NYLUVER</span>
+        <span class="brand-tagline">Florist & Gifting</span>
+      </a>
+
+      <div class="header-actions">
+        <div class="lang-toggle" role="group" aria-label="Language Switcher">
+          <button type="button" class="lang-btn active" id="btn-en" onclick="setLanguage('en')">English</button>
+          <button type="button" class="lang-btn" id="btn-ar" onclick="setLanguage('ar')">\u0627\u0644\u0639\u0631\u0628\u064A\u0629</button>
+        </div>
+
+        <button type="button" class="print-btn" onclick="window.print()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span class="en-text">Print</span>
+          <span class="ar-text" style="display:none;">\u0637\u0628\u0627\u0639\u0629</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="en-text">\u{1F512} Gift Parcel & Anonymous Gifting Policy</span>
+      <span class="ar-text" style="display:none;">\u{1F512} \u0633\u064A\u0627\u0633\u0629 \u062E\u0635\u0648\u0635\u064A\u0629 \u0637\u0631\u0648\u062F \u0627\u0644\u0647\u062F\u0627\u064A\u0627 \u0648\u0627\u0644\u0625\u0647\u062F\u0627\u0621 \u0627\u0644\u0633\u0631\u064A</span>
+    </div>
+    <h1 class="en-text">Gift Parcel Privacy Policy</h1>
+    <h1 class="ar-text" style="display:none;">\u0633\u064A\u0627\u0633\u0629 \u062E\u0635\u0648\u0635\u064A\u0629 \u0637\u0631\u0648\u062F \u0627\u0644\u0647\u062F\u0627\u064A\u0627</h1>
+    <p class="hero-sub en-text">
+      At Nyluver, we honor the intimacy and surprise of gifting. This policy outlines our uncompromising commitment to protecting both sender identity and recipient confidentiality throughout the entire gifting lifecycle.
+    </p>
+    <p class="hero-sub ar-text" style="display:none;">
+      \u0641\u064A \u0646\u064A\u0644\u0648\u0641\u0631\u060C \u0646\u062D\u0631\u0635 \u0639\u0644\u0649 \u0642\u062F\u0633\u064A\u0629 \u0627\u0644\u0645\u0641\u0627\u062C\u0623\u0629 \u0648\u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629 \u0641\u064A \u062A\u0642\u062F\u064A\u0645 \u0627\u0644\u0647\u062F\u0627\u064A\u0627. \u062A\u0648\u0636\u062D \u0647\u0630\u0647 \u0627\u0644\u0633\u064A\u0627\u0633\u0629 \u0627\u0644\u062A\u0632\u0627\u0645\u0646\u0627 \u0627\u0644\u0643\u0627\u0645\u0644 \u0628\u062D\u0645\u0627\u064A\u0629 \u0647\u0648\u064A\u0629 \u0627\u0644\u0645\u0631\u0633\u0644 \u0648\u0633\u0631\u064A\u0629 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u062E\u0644\u0627\u0644 \u0643\u0627\u0641\u0629 \u0645\u0631\u0627\u062D\u0644 \u062A\u062C\u0647\u064A\u0632 \u0648\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0637\u0631\u062F.
+    </p>
+    <div class="hero-meta">
+      <span class="en-text">Effective Date: October 2026</span>
+      <span class="ar-text" style="display:none;">\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0633\u0631\u064A\u0627\u0646: \u0623\u0643\u062A\u0648\u0628\u0631 2026</span>
+      <span>\u2022</span>
+      <span class="en-text">Standard v2.0</span>
+      <span class="ar-text" style="display:none;">\u0627\u0644\u0625\u0635\u062F\u0627\u0631 2.0</span>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <div class="content-wrapper">
+    <!-- Quick Nav Sidebar -->
+    <aside class="toc-sidebar">
+      <div class="toc-title en-text">Policy Sections</div>
+      <div class="toc-title ar-text" style="display:none;">\u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0633\u064A\u0627\u0633\u0629</div>
+      <ul class="toc-links">
+        <li><a href="#anonymity" class="active"><span class="en-text">1. Sender Anonymity</span><span class="ar-text" style="display:none;">\u0661. \u0633\u0631\u064A\u0629 \u0647\u0648\u064A\u0629 \u0627\u0644\u0645\u0631\u0633\u0644</span></a></li>
+        <li><a href="#recipient"><span class="en-text">2. Recipient Confidentiality</span><span class="ar-text" style="display:none;">\u0662. \u062E\u0635\u0648\u0635\u064A\u0629 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u0644\u0645</span></a></li>
+        <li><a href="#packaging"><span class="en-text">3. Parcel & Envelope Privacy</span><span class="ar-text" style="display:none;">\u0663. \u062E\u0635\u0648\u0635\u064A\u0629 \u0627\u0644\u0637\u0631\u062F \u0648\u0627\u0644\u0638\u0631\u0641</span></a></li>
+        <li><a href="#fleet"><span class="en-text">4. Internal Fleet & Dispatch</span><span class="ar-text" style="display:none;">\u0664. \u0623\u0633\u0637\u0648\u0644 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u062F\u0627\u062E\u0644\u064A</span></a></li>
+        <li><a href="#whatsapp"><span class="en-text">5. WhatsApp Notifications</span><span class="ar-text" style="display:none;">\u0665. \u0625\u0634\u0639\u0627\u0631\u0627\u062A \u0648\u0627\u062A\u0633\u0627\u0628 \u0627\u0644\u0622\u0645\u0646\u0629</span></a></li>
+        <li><a href="#security"><span class="en-text">6. Data Security & Storage</span><span class="ar-text" style="display:none;">\u0666. \u0623\u0645\u0627\u0646 \u0648\u062A\u062E\u0632\u064A\u0646 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A</span></a></li>
+        <li><a href="#support"><span class="en-text">7. Contact & Assistance</span><span class="ar-text" style="display:none;">\u0667. \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0648\u0627\u0644\u062F\u0639\u0645</span></a></li>
+      </ul>
+    </aside>
+
+    <!-- Policy Cards -->
+    <main class="policy-body">
+
+      <!-- 1. Sender Anonymity -->
+      <section id="anonymity" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F381}</div>
+          <h2 class="en-text">1. Strict Sender Anonymity by Default</h2>
+          <h2 class="ar-text" style="display:none;">\u0661. \u0627\u0644\u0633\u0631\u064A\u0629 \u0627\u0644\u062A\u0627\u0645\u0629 \u0644\u0647\u0648\u064A\u0629 \u0627\u0644\u0645\u0631\u0633\u0644 \u0628\u0634\u0643\u0644 \u0627\u0641\u062A\u0631\u0627\u0636\u064A</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Nyluver is built around the authentic luxury of surprise. Every gift parcel dispatched through our platform is strictly <strong>anonymous by default</strong>.
+          </p>
+          <div class="highlight-box">
+            <span class="shield-badge">GUARANTEE</span> The recipient of a gift parcel will <strong>never</strong> receive or be told the sender's real name, phone number, email address, or billing details.
+          </div>
+          <ul class="policy-list">
+            <li><strong>Card Message Control:</strong> The sender's identity is only revealed if the sender chooses to write their name or signature in the custom gift card message.</li>
+            <li><strong>Internal Operations Only:</strong> Sender credentials and payment details are restricted strictly to platform operations for order verification, compliance, and fraud prevention.</li>
+            <li><strong>No Digital Trace on Parcel:</strong> Physical parcel invoices and receipts provided with the parcel do not contain the sender's payment method, billing address, or personal identifiers.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u062A\u062A\u0645\u064A\u0632 \u0646\u064A\u0644\u0648\u0641\u0631 \u0628\u062A\u0648\u0641\u064A\u0631 \u062A\u062C\u0631\u0628\u0629 \u0625\u0647\u062F\u0627\u0621 \u0641\u0627\u062E\u0631\u0629 \u0642\u0627\u0626\u0645\u0629 \u0639\u0644\u0649 \u0627\u0644\u0645\u0641\u0627\u062C\u0623\u0629 \u0648\u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629. \u062C\u0645\u064A\u0639 \u0637\u0631\u0648\u062F \u0627\u0644\u0647\u062F\u0627\u064A\u0627 \u0627\u0644\u0645\u0631\u0633\u0644\u0629 \u0639\u0628\u0631 \u0645\u0646\u0635\u062A\u0646\u0627 \u062A\u0643\u0648\u0646 <strong>\u0633\u0631\u064A\u0629 \u0628\u0627\u0644\u0643\u0627\u0645\u0644 \u0644\u0644\u0645\u0631\u0633\u0644 \u0628\u0634\u0643\u0644 \u0627\u0641\u062A\u0631\u0627\u0636\u064A</strong>.
+          </p>
+          <div class="highlight-box">
+            <span class="shield-badge">\u0636\u0645\u0627\u0646</span> \u0644\u0646 \u064A\u062A\u0645 \u0625\u0641\u0635\u0627\u062D \u0623\u0648 \u0643\u0634\u0641 \u0627\u0633\u0645 \u0627\u0644\u0645\u0631\u0633\u0644\u060C \u0623\u0648 \u0631\u0642\u0645 \u0647\u0627\u062A\u0641\u0647\u060C \u0623\u0648 \u0628\u0631\u064A\u062F\u0647 \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u060C \u0623\u0648 \u0628\u064A\u0627\u0646\u0627\u062A \u0641\u0648\u0627\u062A\u064A\u0631\u0647 \u0625\u0644\u0649 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 <strong>\u062A\u062D\u062A \u0623\u064A \u0638\u0631\u0641</strong>.
+          </div>
+          <ul class="policy-list">
+            <li><strong>\u0627\u0644\u062A\u062D\u0643\u0645 \u0641\u064A \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0625\u0647\u062F\u0627\u0621:</strong> \u0644\u0627 \u062A\u0638\u0647\u0631 \u0647\u0648\u064A\u0629 \u0627\u0644\u0645\u0631\u0633\u0644 \u0625\u0644\u0627 \u0625\u0630\u0627 \u0627\u062E\u062A\u0627\u0631 \u0627\u0644\u0645\u0631\u0633\u0644 \u0643\u062A\u0627\u0628\u0629 \u0627\u0633\u0645\u0647 \u0623\u0648 \u062A\u0648\u0642\u064A\u0639\u0647 \u0628\u0646\u0641\u0633\u0647 \u062F\u0627\u062E\u0644 \u0631\u0633\u0627\u0644\u0629 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0647\u062F\u064A\u0629 \u0627\u0644\u0645\u0631\u0641\u0642\u0629.</li>
+            <li><strong>\u0627\u0644\u0648\u0635\u0648\u0644 \u0627\u0644\u062F\u0627\u062E\u0644\u064A \u0641\u0642\u0637:</strong> \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0631\u0633\u0644 \u0648\u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0627\u062D\u0629 \u062D\u0635\u0631\u064A\u0627\u064B \u0644\u0637\u0627\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0648\u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u0635\u0629 \u0644\u0644\u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u0637\u0644\u0628 \u0648\u0645\u0646\u0639 \u0627\u0644\u0627\u062D\u062A\u064A\u0627\u0644.</li>
+            <li><strong>\u062E\u0644\u0648 \u0627\u0644\u0637\u0631\u062F \u0645\u0646 \u0627\u0644\u0641\u0648\u0627\u062A\u064A\u0631 \u0627\u0644\u062D\u0633\u0627\u0633\u0629:</strong> \u0627\u0644\u0637\u0631\u062F \u0627\u0644\u0641\u0639\u0644\u064A \u0644\u0627 \u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u0623\u064A \u0641\u0648\u0627\u062A\u064A\u0631 \u062A\u0643\u0634\u0641 \u0648\u0633\u064A\u0644\u0629 \u0627\u0644\u062F\u0641\u0639 \u0623\u0648 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u0631\u0633\u0644 \u0623\u0648 \u0628\u064A\u0627\u0646\u0627\u062A\u0647 \u0627\u0644\u0634\u062E\u0635\u064A\u0629.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 2. Recipient Confidentiality -->
+      <section id="recipient" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F4CD}</div>
+          <h2 class="en-text">2. Recipient Confidentiality & Location Safeguards</h2>
+          <h2 class="ar-text" style="display:none;">\u0662. \u0633\u0631\u064A\u0629 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0648\u062D\u0645\u0627\u064A\u0629 \u0645\u0648\u0642\u0639\u0647 \u0627\u0644\u062C\u063A\u0631\u0627\u0641\u064A</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            We treat recipient details with the highest degree of confidentiality and data minimization:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Location Privacy:</strong> If the sender does not know the recipient's exact address and Nyluver coordinates the delivery directly with the recipient, the recipient's precise address/GPS coordinates are <strong>never disclosed back to the sender</strong>.</li>
+            <li><strong>Purpose-Bound Usage:</strong> Recipient contact details (phone number, WhatsApp, and delivery slot preference) are used solely to deliver the specific gift parcel and verify receipt.</li>
+            <li><strong>Right of Refusal:</strong> If a recipient declines to accept a delivery, we respect their decision immediately without disclosing sensitive recipient feedback or reasoning back to the sender.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u0646\u062A\u0639\u0627\u0645\u0644 \u0645\u0639 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u0644\u0645\u064A\u0646 \u0628\u0623\u0639\u0644\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0633\u0631\u064A\u0629 \u0648\u0648\u0641\u0642 \u0645\u0628\u062F\u0623 \u062A\u0642\u0644\u064A\u0644 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0625\u0644\u0649 \u0627\u0644\u062D\u062F \u0627\u0644\u0623\u062F\u0646\u0649:
+          </p>
+          <ul class="policy-list">
+            <li><strong>\u062D\u0645\u0627\u064A\u0629 \u0627\u0644\u0645\u0648\u0642\u0639 \u0627\u0644\u062C\u063A\u0631\u0627\u0641\u064A:</strong> \u0625\u0630\u0627 \u0644\u0645 \u064A\u0643\u0646 \u0627\u0644\u0645\u0631\u0633\u0644 \u0639\u0644\u0649 \u0639\u0644\u0645 \u0628\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0648\u062A\u0648\u0644\u062A \u0646\u064A\u0644\u0648\u0641\u0631 \u0627\u0644\u062A\u0646\u0633\u064A\u0642 \u0645\u0639 \u0627\u0644\u0645\u0633\u062A\u0644\u0645\u060C \u0641\u0625\u0646 \u0627\u0644\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062F\u0642\u064A\u0642 \u0648\u0625\u062D\u062F\u0627\u062B\u064A\u0627\u062A \u0627\u0644\u0645\u0648\u0642\u0639 <strong>\u0644\u0627 \u062A\u062A\u0645 \u0645\u0634\u0627\u0631\u0643\u062A\u0647\u0627 \u0646\u0647\u0627\u0626\u064A\u0627\u064B \u0645\u0639 \u0627\u0644\u0645\u0631\u0633\u0644</strong>.</li>
+            <li><strong>\u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0645\u062D\u062F\u062F \u0644\u0644\u063A\u0631\u0636:</strong> \u062A\u064F\u0633\u062A\u062E\u062F\u0645 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u0644\u0645 (\u0631\u0642\u0645 \u0627\u0644\u0647\u0627\u062A\u0641\u060C \u0627\u0644\u0648\u0627\u062A\u0633\u0627\u0628\u060C \u0648\u0627\u0644\u0648\u0642\u062A \u0627\u0644\u0645\u0641\u0636\u0644 \u0644\u0644\u0627\u0633\u062A\u0644\u0627\u0645) \u062D\u0635\u0631\u064A\u0627\u064B \u0644\u0623\u062C\u0644 \u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0647\u062F\u064A\u0629 \u0648\u0627\u0644\u062A\u0623\u0643\u062F \u0645\u0646 \u0648\u0635\u0648\u0644\u0647\u0627.</li>
+            <li><strong>\u062D\u0642 \u0631\u0641\u0636 \u0627\u0644\u0627\u0633\u062A\u0644\u0627\u0645:</strong> \u0625\u0630\u0627 \u0631\u063A\u0628 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0641\u064A \u0627\u0644\u0627\u0639\u062A\u0630\u0627\u0631 \u0639\u0646 \u0627\u0633\u062A\u0644\u0627\u0645 \u0627\u0644\u0647\u062F\u064A\u0629\u060C \u064A\u062A\u0645 \u0627\u062D\u062A\u0631\u0627\u0645 \u0631\u063A\u0628\u062A\u0647 \u0641\u0648\u0631\u0627\u064B \u062F\u0648\u0646 \u0645\u0634\u0627\u0631\u0643\u0629 \u0623\u064A \u0645\u0628\u0631\u0631\u0627\u062A \u0623\u0648 \u062A\u0641\u0627\u0635\u064A\u0644 \u062E\u0627\u0635\u0629 \u0644\u0644\u0645\u0633\u062A\u0644\u0645 \u0645\u0639 \u0627\u0644\u0645\u0631\u0633\u0644.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 3. Parcel & Envelope Privacy -->
+      <section id="packaging" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u2709\uFE0F</div>
+          <h2 class="en-text">3. Parcel Packaging & Sealed Card Privacy</h2>
+          <h2 class="ar-text" style="display:none;">\u0663. \u062E\u0635\u0648\u0635\u064A\u0629 \u0627\u0644\u0637\u0631\u062F \u0648\u0645\u062D\u062A\u0648\u0649 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0647\u062F\u064A\u0629 \u0627\u0644\u0645\u062E\u062A\u0648\u0645\u0629</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Every Nyluver parcel is hand-crafted and packaged to preserve total discretion:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Sealed Envelopes:</strong> Gift cards and custom notes are sealed in luxury envelopes. Couriers and external handlers cannot view or inspect written personal messages.</li>
+            <li><strong>Discreet Outer Packaging:</strong> Outer parcel tags display only essential routing details (tracking reference, delivery slot, and recipient first name) without price tags or item cost breakdown.</li>
+            <li><strong>Tamper-Evident Seals:</strong> All gift boxes, flower wraps, and add-ons are secured with tamper-evident premium ribbons and seals.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u064A\u062A\u0645 \u062A\u062C\u0647\u064A\u0632 \u0648\u062A\u063A\u0644\u064A\u0641 \u0643\u0644 \u0637\u0631\u062F \u0647\u062F\u0627\u064A\u0627 \u0645\u0646 \u0646\u064A\u0644\u0648\u0641\u0631 \u0628\u0639\u0646\u0627\u064A\u0629 \u0641\u0627\u0626\u0642\u0629 \u0644\u0636\u0645\u0627\u0646 \u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629 \u0648\u0627\u0644\u062A\u0645\u064A\u0632:
+          </p>
+          <ul class="policy-list">
+            <li><strong>\u0623\u0638\u0631\u0641 \u0647\u062F\u0627\u064A\u0627 \u0645\u062E\u062A\u0648\u0645\u0629:</strong> \u062A\u0648\u0636\u0639 \u0628\u0637\u0627\u0642\u0627\u062A \u0627\u0644\u062A\u0647\u0646\u0626\u0629 \u0648\u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u0643\u062A\u0648\u0628\u0629 \u062F\u0627\u062E\u0644 \u0623\u0638\u0631\u0641 \u0641\u0627\u062E\u0631\u0629 \u0648\u0645\u062E\u062A\u0648\u0645\u0629 \u062A\u0645\u0627\u0645\u0627\u064B\u060C \u0628\u062D\u064A\u062B \u0644\u0627 \u064A\u0645\u0643\u0646 \u0644\u0644\u0633\u0627\u0626\u0642\u064A\u0646 \u0623\u0648 \u0639\u0645\u0627\u0644 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0646\u0635 \u0627\u0644\u0631\u0633\u0627\u0644\u0629.</li>
+            <li><strong>\u062A\u063A\u0644\u064A\u0641 \u062E\u0627\u0631\u062C\u064A \u0633\u0631\u064A:</strong> \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u062E\u0627\u0631\u062C\u064A\u0629 \u0644\u0627 \u062A\u062A\u0636\u0645\u0646 \u0633\u0648\u0649 \u0631\u0642\u0645 \u0627\u0644\u062A\u062A\u0628\u0639 \u0648\u0648\u0642\u062A \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0648\u0627\u0644\u0627\u0633\u0645 \u0627\u0644\u0623\u0648\u0644 \u0644\u0644\u0645\u0633\u062A\u0644\u0645\u060C \u0628\u062F\u0648\u0646 \u0623\u064A \u0623\u0633\u0639\u0627\u0631 \u0623\u0648 \u062A\u0641\u0627\u0635\u064A\u0644 \u062A\u0643\u0644\u0641\u0629.</li>
+            <li><strong>\u0623\u062E\u062A\u0627\u0645 \u0636\u062F \u0627\u0644\u0639\u0628\u062B:</strong> \u062C\u0645\u064A\u0639 \u0635\u0646\u0627\u062F\u064A\u0642 \u0627\u0644\u0647\u062F\u0627\u064A\u0627 \u0648\u0628\u0627\u0642\u0627\u062A \u0627\u0644\u0648\u0631\u062F \u062A\u064F\u063A\u0644\u0642 \u0628\u0623\u0634\u0631\u0637\u0629 \u0648\u0623\u062E\u062A\u0627\u0645 \u0641\u0627\u062E\u0631\u0629 \u062A\u0636\u0645\u0646 \u0639\u062F\u0645 \u0641\u062A\u062D \u0627\u0644\u0637\u0631\u062F \u0625\u0644\u0627 \u0645\u0646 \u0642\u0628\u0644 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0627\u0644\u0646\u0647\u0627\u0626\u064A.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 4. Internal Fleet & Dispatch -->
+      <section id="fleet" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F697}</div>
+          <h2 class="en-text">4. Internal Delivery Fleet Protocol</h2>
+          <h2 class="ar-text" style="display:none;">\u0664. \u0628\u0631\u0648\u062A\u0648\u0643\u0648\u0644 \u0623\u0633\u0637\u0648\u0644 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u062F\u0627\u062E\u0644\u064A</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            Nyluver operates an internal delivery fleet rather than unvetted gig economy drivers:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Data Masking for Drivers:</strong> Drivers receive only the destination address and direct recipient delivery instructions. They have zero access to sender identity, sender phone numbers, or order transaction values.</li>
+            <li><strong>Background Vetted Staff:</strong> All logistics personnel undergo strict background screening and sign confidentiality agreements concerning customer identities and VIP delivery destinations.</li>
+            <li><strong>No Driver App Data Leak:</strong> Task assignments are managed centrally through Nyluver's secure dispatch console.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u062A\u0639\u062A\u0645\u062F \u0646\u064A\u0644\u0648\u0641\u0631 \u0639\u0644\u0649 \u0623\u0633\u0637\u0648\u0644 \u062A\u0648\u0635\u064A\u0644 \u062F\u0627\u062E\u0644\u064A \u0648\u0645\u0628\u0627\u0634\u0631 \u0628\u062F\u0644\u0627\u064B \u0645\u0646 \u0627\u0644\u0627\u0639\u062A\u0645\u0627\u062F \u0639\u0644\u0649 \u0634\u0631\u0643\u0627\u062A \u062A\u0648\u0635\u064A\u0644 \u0639\u0634\u0648\u0627\u0626\u064A\u0629:
+          </p>
+          <ul class="policy-list">
+            <li><strong>\u062D\u062C\u0628 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0645\u0631\u0633\u0644 \u0639\u0646 \u0627\u0644\u0633\u0627\u0626\u0642:</strong> \u064A\u062D\u0635\u0644 \u0627\u0644\u0633\u0627\u0626\u0642 \u0641\u0642\u0637 \u0639\u0644\u0649 \u0648\u062C\u0647\u0629 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0648\u0631\u0642\u0645 \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0644\u0644\u062A\u0633\u0644\u064A\u0645\u060C \u062F\u0648\u0646 \u0623\u064A \u0625\u0645\u0643\u0627\u0646\u064A\u0629 \u0644\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0647\u0648\u064A\u0629 \u0627\u0644\u0645\u0631\u0633\u0644 \u0623\u0648 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062F\u0641\u0639.</li>
+            <li><strong>\u0643\u0627\u062F\u0631 \u0645\u0648\u062B\u0648\u0642 \u0648\u0645\u0641\u062D\u0648\u0635:</strong> \u064A\u062E\u0636\u0639 \u062C\u0645\u064A\u0639 \u0633\u0627\u0626\u0642\u064A \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0644\u0641\u062D\u0635 \u062F\u0642\u064A\u0642 \u0648\u064A\u0648\u0642\u0639\u0648\u0646 \u0639\u0644\u0649 \u0627\u062A\u0641\u0627\u0642\u064A\u0627\u062A \u0633\u0631\u064A\u0629 \u062A\u062D\u0645\u064A \u062E\u0635\u0648\u0635\u064A\u0629 \u0627\u0644\u0632\u0628\u0627\u0626\u0646 \u0648\u0645\u0648\u0627\u0642\u0639 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0627\u0644\u0631\u0627\u0642\u064A\u0629.</li>
+            <li><strong>\u0625\u062F\u0627\u0631\u0629 \u0645\u0631\u0643\u0632\u064A\u0629 \u0644\u0644\u0637\u0644\u0628\u0627\u062A:</strong> \u064A\u062A\u0645 \u062A\u0648\u062C\u064A\u0647 \u0645\u0647\u0627\u0645 \u0627\u0644\u062A\u0648\u0635\u064A\u0644 \u0639\u0628\u0631 \u0644\u0648\u062D\u0629 \u062A\u062D\u0643\u0645 \u0625\u062F\u0627\u0631\u064A\u0629 \u0645\u0631\u0643\u0632\u064A\u0629 \u0648\u0622\u0645\u0646\u0629 \u062F\u0648\u0646 \u062A\u062E\u0632\u064A\u0646 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0632\u0628\u0627\u0626\u0646 \u0639\u0644\u0649 \u0623\u062C\u0647\u0632\u0629 \u0627\u0644\u0633\u0627\u0626\u0642\u064A\u0646 \u0627\u0644\u0634\u062E\u0635\u064A\u0629.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 5. WhatsApp Notifications -->
+      <section id="whatsapp" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F4AC}</div>
+          <h2 class="en-text">5. WhatsApp & Digital Communications Protocol</h2>
+          <h2 class="ar-text" style="display:none;">\u0665. \u0628\u0631\u0648\u062A\u0648\u0643\u0648\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062A \u0648\u0627\u062A\u0633\u0627\u0628 \u0648\u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0627\u0644\u0631\u0642\u0645\u064A</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            When coordinating delivery via official WhatsApp business channels:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Encrypted Coordination:</strong> All delivery confirmation messages ("You have a gift parcel waiting from Nyluver") are sent exclusively from our verified business account.</li>
+            <li><strong>Identity Shielding in Chats:</strong> Customer support representatives chatting with the recipient will never disclose the sender\u2019s name even if directly asked by the recipient, upholding our anonymous gifting covenant.</li>
+            <li><strong>No Marketing Spams:</strong> Recipient phone numbers gathered for parcel dispatch are strictly excluded from general marketing broadcasts unless the recipient independently signs up for a Nyluver account.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u0639\u0646\u062F \u0627\u0644\u062A\u0646\u0633\u064A\u0642 \u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0647\u062F\u064A\u0629 \u0639\u0628\u0631 \u0642\u0646\u0648\u0627\u062A \u0648\u0627\u062A\u0633\u0627\u0628 \u0627\u0644\u0631\u0633\u0645\u064A\u0629:
+          </p>
+          <ul class="policy-list">
+            <li><strong>\u062A\u0648\u0627\u0635\u0644 \u0645\u0648\u062B\u0642 \u0648\u0645\u0634\u0641\u0651\u0631:</strong> \u064A\u062A\u0645 \u0625\u0631\u0633\u0627\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062A \u0627\u0633\u062A\u0644\u0627\u0645 \u0627\u0644\u0647\u062F\u064A\u0629 \u0648\u062A\u0623\u0643\u064A\u062F \u0645\u0648\u0639\u062F \u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0639\u0628\u0631 \u0627\u0644\u062D\u0633\u0627\u0628 \u0627\u0644\u0631\u0633\u0645\u064A \u0627\u0644\u0645\u0648\u062B\u0642 \u0644\u0634\u0631\u0643\u0629 \u0646\u064A\u0644\u0648\u0641\u0631.</li>
+            <li><strong>\u0627\u0644\u0627\u0644\u062A\u0632\u0627\u0645 \u0628\u0639\u062F\u0645 \u0627\u0644\u0625\u0641\u0635\u0627\u062D \u0641\u064A \u0627\u0644\u0645\u062D\u0627\u062F\u062B\u0627\u062A:</strong> \u0644\u0646 \u064A\u0642\u0648\u0645 \u0645\u0648\u0638\u0641\u0648 \u062E\u062F\u0645\u0629 \u0627\u0644\u0639\u0645\u0644\u0627\u0621 \u0628\u0627\u0644\u0643\u0634\u0641 \u0639\u0646 \u0627\u0633\u0645 \u0627\u0644\u0645\u0631\u0633\u0644 \u062D\u062A\u0649 \u0641\u064A \u062D\u0627\u0644 \u0633\u0624\u0627\u0644 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0628\u0634\u0643\u0644 \u0645\u0628\u0627\u0634\u0631\u060C \u0627\u0644\u062A\u0632\u0627\u0645\u0627\u064B \u0628\u0627\u062A\u0641\u0627\u0642\u064A\u0629 \u0633\u0631\u064A\u0629 \u0627\u0644\u0647\u062F\u064A\u0629.</li>
+            <li><strong>\u062D\u0638\u0631 \u0627\u0644\u0631\u0633\u0627\u0626\u0644 \u0627\u0644\u062A\u0631\u0648\u064A\u062C\u064A\u0629:</strong> \u0644\u0627 \u064A\u062A\u0645 \u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0645\u0633\u062A\u0644\u0645\u064A\u0646 \u0644\u0623\u064A \u0623\u063A\u0631\u0627\u0636 \u0625\u0639\u0644\u0627\u0646\u064A\u0629 \u0623\u0648 \u0631\u0633\u0627\u0626\u0644 \u062A\u0631\u0648\u064A\u062C\u064A\u0629 \u0645\u0627 \u0644\u0645 \u064A\u0642\u0645 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0628\u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0628\u0646\u0641\u0633\u0647 \u0641\u064A \u0627\u0644\u0645\u0646\u0635\u0629.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 6. Data Security -->
+      <section id="security" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F6E1}\uFE0F</div>
+          <h2 class="en-text">6. Technical Safeguards & Data Retention</h2>
+          <h2 class="ar-text" style="display:none;">\u0666. \u0627\u0644\u062D\u0645\u0627\u064A\u0629 \u0627\u0644\u062A\u0642\u0646\u064A\u0629 \u0648\u0641\u062A\u0631\u0627\u062A \u062D\u0641\u0638 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            We implement stringent physical, procedural, and technological safeguards:
+          </p>
+          <ul class="policy-list">
+            <li><strong>Encryption Standards:</strong> Data in transit is protected using TLS 1.3 encryption, and sensitive customer data is stored in isolated PostgreSQL clusters with row-level role boundaries.</li>
+            <li><strong>Zero Commercial Data Selling:</strong> Nyluver does not sell, license, or monetize customer or recipient personal data to third-party ad networks or brokers.</li>
+            <li><strong>Retention Policy:</strong> Delivery coordination logs and location notes are archived and stripped of active identifiers after 90 days following successful order delivery.</li>
+          </ul>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u0646\u0637\u0628\u0642 \u0623\u0639\u0644\u0649 \u0627\u0644\u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u0623\u0645\u0646\u064A\u0629 \u0648\u0627\u0644\u062A\u0642\u0646\u064A\u0629 \u0644\u062D\u0645\u0627\u064A\u0629 \u062E\u0635\u0648\u0635\u064A\u062A\u0643\u0645:
+          </p>
+          <ul class="policy-list">
+            <li><strong>\u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062A\u0634\u0641\u064A\u0631:</strong> \u062A\u0634\u0641\u064A\u0631 \u0643\u0627\u0645\u0644 \u0644\u062C\u0645\u064A\u0639 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0623\u062B\u0646\u0627\u0621 \u0627\u0644\u0646\u0642\u0644 \u0639\u0628\u0631 \u0628\u0631\u0648\u062A\u0648\u0643\u0648\u0644 TLS 1.3\u060C \u0645\u0639 \u0639\u0632\u0644 \u0642\u0648\u0627\u0639\u062F \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0648\u062A\u0637\u0628\u064A\u0642 \u0635\u0644\u0627\u062D\u064A\u0627\u062A \u0648\u0635\u0648\u0644 \u0635\u0627\u0631\u0645\u0629.</li>
+            <li><strong>\u0639\u062F\u0645 \u0628\u064A\u0639 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A:</strong> \u062A\u0644\u062A\u0632\u0645 \u0646\u064A\u0644\u0648\u0641\u0631 \u0628\u0639\u062F\u0645 \u0628\u064A\u0639 \u0623\u0648 \u0645\u0634\u0627\u0631\u0643\u0629 \u0623\u0648 \u062A\u0623\u062C\u064A\u0631 \u0623\u064A \u0628\u064A\u0627\u0646\u0627\u062A \u0634\u062E\u0635\u064A\u0629 \u0644\u0644\u0645\u0631\u0633\u0644 \u0623\u0648 \u0627\u0644\u0645\u0633\u062A\u0644\u0645 \u0645\u0639 \u0623\u064A \u062C\u0647\u0627\u062A \u062E\u0627\u0631\u062C\u064A\u0629 \u0623\u0648 \u0634\u0628\u0643\u0627\u062A \u0625\u0639\u0644\u0627\u0646\u064A\u0629.</li>
+            <li><strong>\u0641\u062A\u0631\u0629 \u0627\u0644\u0627\u062D\u062A\u0641\u0627\u0638 \u0628\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A:</strong> \u064A\u062A\u0645 \u0623\u0631\u0634\u0641\u0629 \u0648\u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062A\u0641\u0635\u064A\u0644\u064A\u0629 \u0644\u062A\u0646\u0633\u064A\u0642 \u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0628\u0639\u062F \u0645\u0631\u0648\u0631 90 \u064A\u0648\u0645\u0627\u064B \u0645\u0646 \u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0637\u0644\u0628 \u0628\u0646\u062C\u0627\u062D.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 7. Support & Inquiries -->
+      <section id="support" class="policy-card">
+        <div class="card-header">
+          <div class="card-icon">\u{1F4DE}</div>
+          <h2 class="en-text">7. Contact & Privacy Inquiries</h2>
+          <h2 class="ar-text" style="display:none;">\u0667. \u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0648\u0627\u0633\u062A\u0641\u0633\u0627\u0631\u0627\u062A \u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629</h2>
+        </div>
+        <div class="en-text">
+          <p>
+            If you have questions regarding this Gift Parcel Privacy Policy or wish to exercise your rights regarding your personal information:
+          </p>
+          <div class="highlight-box">
+            <strong>Nyluver Data Protection Office</strong><br>
+            Email: <a href="mailto:privacy@nyluver.com" style="color:var(--green-primary); font-weight:600;">privacy@nyluver.com</a><br>
+            Support: <a href="mailto:support@nyluver.com" style="color:var(--green-primary); font-weight:600;">support@nyluver.com</a><br>
+            Tripoli Central Operations, Libya
+          </div>
+        </div>
+        <div class="ar-text" style="display:none;">
+          <p>
+            \u0625\u0630\u0627 \u0643\u0627\u0646 \u0644\u062F\u064A\u0643\u0645 \u0623\u064A \u0627\u0633\u062A\u0641\u0633\u0627\u0631 \u062D\u0648\u0644 \u0633\u064A\u0627\u0633\u0629 \u062E\u0635\u0648\u0635\u064A\u0629 \u0637\u0631\u0648\u062F \u0627\u0644\u0647\u062F\u0627\u064A\u0627 \u0623\u0648 \u062A\u0631\u063A\u0628\u0648\u0646 \u0641\u064A \u0627\u0644\u0627\u0633\u062A\u0641\u0633\u0627\u0631 \u0639\u0646 \u0628\u064A\u0627\u0646\u0627\u062A\u0643\u0645 \u0627\u0644\u0634\u062E\u0635\u064A\u0629:
+          </p>
+          <div class="highlight-box">
+            <strong>\u0645\u0643\u062A\u0628 \u062D\u0645\u0627\u064A\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u2014 \u0646\u064A\u0644\u0648\u0641\u0631</strong><br>
+            \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0644\u0644\u062E\u0635\u0648\u0635\u064A\u0629: <a href="mailto:privacy@nyluver.com" style="color:var(--green-primary); font-weight:600;">privacy@nyluver.com</a><br>
+            \u062E\u062F\u0645\u0629 \u0627\u0644\u0639\u0645\u0644\u0627\u0621: <a href="mailto:support@nyluver.com" style="color:var(--green-primary); font-weight:600;">support@nyluver.com</a><br>
+            \u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u0645\u0631\u0643\u0632\u064A\u0629\u060C \u0637\u0631\u0627\u0628\u0644\u0633\u060C \u0644\u064A\u0628\u064A\u0627
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-container">
+      <div>
+        <div class="footer-brand">NYLUVER</div>
+        <p class="footer-text en-text">Luxury Florist & Gifting. Uncompromising Elegance.</p>
+        <p class="footer-text ar-text" style="display:none;">\u0623\u0631\u0642\u0649 \u062A\u0635\u0627\u0645\u064A\u0645 \u0627\u0644\u0632\u0647\u0648\u0631 \u0648\u0627\u0644\u0647\u062F\u0627\u064A\u0627 \u0627\u0644\u0641\u0627\u062E\u0631\u0629.</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="/privacy-policy" class="en-text">Privacy Policy</a>
+        <a href="/privacy-policy" class="ar-text" style="display:none;">\u0633\u064A\u0627\u0633\u0629 \u0627\u0644\u062E\u0635\u0648\u0635\u064A\u0629</a>
+        <span>\u2022</span>
+        <a href="/admin" class="en-text">Admin Panel</a>
+        <a href="/admin" class="ar-text" style="display:none;">\u0644\u0648\u062D\u0629 \u0627\u0644\u0625\u062F\u0627\u0631\u0629</a>
+      </div>
+
+      <div class="footer-text">
+        \xA9 2026 Nyluver Inc. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      const html = document.documentElement;
+      const isArabic = (lang === 'ar');
+      
+      html.lang = lang;
+      html.dir = isArabic ? 'rtl' : 'ltr';
+
+      document.getElementById('btn-en').classList.toggle('active', !isArabic);
+      document.getElementById('btn-ar').classList.toggle('active', isArabic);
+
+      document.querySelectorAll('.en-text').forEach(el => {
+        el.style.display = isArabic ? 'none' : '';
+      });
+
+      document.querySelectorAll('.ar-text').forEach(el => {
+        el.style.display = isArabic ? '' : 'none';
+      });
+
+      try {
+        localStorage.setItem('nyluver-privacy-lang', lang);
+      } catch (e) {}
+    }
+
+    // Initialize from saved preference or browser language
+    (function init() {
+      try {
+        const saved = localStorage.getItem('nyluver-privacy-lang');
+        if (saved === 'ar' || saved === 'en') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) {}
+      if (navigator.language && navigator.language.startsWith('ar')) {
+        setLanguage('ar');
+      }
+    })();
+
+    // Highlight TOC on scroll
+    const sections = document.querySelectorAll('.policy-card');
+    const tocLinks = document.querySelectorAll('.toc-links a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (window.pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      tocLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }, { passive: true });
+  </script>
+</body>
+</html>
+`;
+
 // server/routes.ts
 var PgSession = connectPgSimple(session);
 var sessionPool = new pg2.Pool({ connectionString: process.env.DATABASE_URL });
@@ -1995,19 +2830,9 @@ function registerRoutes(app2) {
       sameSite: "lax"
     }
   }));
-  app2.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy", "/api/privacy-policy"], (_req, res) => {
-    const candidates = [
-      path.resolve(process.cwd(), "server", "templates", "privacy-policy.html"),
-      path.resolve(process.cwd(), "server", "public", "privacy-policy.html"),
-      path.resolve(process.cwd(), "public", "privacy-policy.html"),
-      path.resolve(process.cwd(), "privacy-policy.html")
-    ];
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        return res.sendFile(c);
-      }
-    }
-    res.status(404).send("Privacy policy template not found");
+  app2.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy", "/api/privacy", "/api/privacy-policy"], (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.send(PRIVACY_POLICY_HTML);
   });
   app2.post("/api/auth/register/send-otp", async (req, res) => {
     try {
@@ -3292,8 +4117,8 @@ function registerRoutes(app2) {
 
 // server/index.ts
 init_db();
-import * as fs2 from "fs";
-import * as path2 from "path";
+import * as fs from "fs";
+import * as path from "path";
 var app = express();
 var log = console.log;
 function setupCors(app2) {
@@ -3330,7 +4155,7 @@ function setupBodyParsing(app2) {
 function setupRequestLogging(app2) {
   app2.use((req, res, next) => {
     const start = Date.now();
-    const path3 = req.path;
+    const path2 = req.path;
     let capturedJsonResponse = void 0;
     const originalResJson = res.json;
     res.json = function(bodyJson, ...args) {
@@ -3338,9 +4163,9 @@ function setupRequestLogging(app2) {
       return originalResJson.apply(res, [bodyJson, ...args]);
     };
     res.on("finish", () => {
-      if (!path3.startsWith("/api")) return;
+      if (!path2.startsWith("/api")) return;
       const duration = Date.now() - start;
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -3354,8 +4179,8 @@ function setupRequestLogging(app2) {
 }
 function getAppName() {
   try {
-    const appJsonPath = path2.resolve(process.cwd(), "app.json");
-    const appJsonContent = fs2.readFileSync(appJsonPath, "utf-8");
+    const appJsonPath = path.resolve(process.cwd(), "app.json");
+    const appJsonContent = fs.readFileSync(appJsonPath, "utf-8");
     const appJson = JSON.parse(appJsonContent);
     return appJson.expo?.name || "App Landing Page";
   } catch {
@@ -3363,19 +4188,19 @@ function getAppName() {
   }
 }
 function serveExpoManifest(platform, res) {
-  const manifestPath = path2.resolve(
+  const manifestPath = path.resolve(
     process.cwd(),
     "static-build",
     platform,
     "manifest.json"
   );
-  if (!fs2.existsSync(manifestPath)) {
+  if (!fs.existsSync(manifestPath)) {
     return res.status(404).json({ error: `Manifest not found for platform: ${platform}` });
   }
   res.setHeader("expo-protocol-version", "1");
   res.setHeader("expo-sfv-version", "0");
   res.setHeader("content-type", "application/json");
-  const manifest = fs2.readFileSync(manifestPath, "utf-8");
+  const manifest = fs.readFileSync(manifestPath, "utf-8");
   res.send(manifest);
 }
 function serveLandingPage({
@@ -3397,13 +4222,13 @@ function serveLandingPage({
   res.status(200).send(html);
 }
 function configureExpoAndLanding(app2) {
-  const templatePath = path2.resolve(
+  const templatePath = path.resolve(
     process.cwd(),
     "server",
     "templates",
     "landing-page.html"
   );
-  const landingPageTemplate = fs2.readFileSync(templatePath, "utf-8");
+  const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
   const appName = getAppName();
   log("Serving static Expo files with dynamic manifest routing");
   app2.use((req, res, next) => {
@@ -3427,8 +4252,8 @@ function configureExpoAndLanding(app2) {
     }
     next();
   });
-  app2.use("/assets", express.static(path2.resolve(process.cwd(), "assets")));
-  app2.use(express.static(path2.resolve(process.cwd(), "static-build")));
+  app2.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
+  app2.use(express.static(path.resolve(process.cwd(), "static-build")));
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
 function setupErrorHandler(app2) {
@@ -3449,17 +4274,17 @@ function setupErrorHandler(app2) {
   setupRequestLogging(app);
   configureExpoAndLanding(app);
   registerRoutes(app);
-  const publicDir = path2.resolve(process.cwd(), "server", "public");
-  const privacyPolicyPath = path2.resolve(publicDir, "privacy-policy.html");
+  const publicDir = path.resolve(process.cwd(), "server", "public");
   app.use("/public", express.static(publicDir));
-  app.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy"], (_req, res) => {
-    return res.sendFile(privacyPolicyPath);
+  app.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy", "/api/privacy", "/api/privacy-policy"], (_req, res) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.send(PRIVACY_POLICY_HTML);
   });
-  const adminDir = path2.resolve(process.cwd(), "server", "admin");
+  const adminDir = path.resolve(process.cwd(), "server", "admin");
   app.use("/admin", express.static(adminDir));
   app.use((req, res, next) => {
     if (req.path.startsWith("/admin")) {
-      return res.sendFile(path2.resolve(adminDir, "index.html"));
+      return res.sendFile(path.resolve(adminDir, "index.html"));
     }
     next();
   });

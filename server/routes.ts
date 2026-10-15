@@ -14,6 +14,7 @@ import { renderReceiptHtml } from "./receipt";
 import { hashPassword, verifyPassword, validatePasswordStrength, generateNumericCode, otpLength, defaultOtp, type OtpChannel } from "./password";
 import { deliverVerificationCode } from "./mailer";
 import { POINTS_PER_UNIT, UNIT_VALUE_LYD, maxPointsForValue, pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
+import { PRIVACY_POLICY_HTML } from "./privacy-html";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -308,19 +309,9 @@ export function registerRoutes(app: Express) {
   // ═══════════════════════════════════════
   // GIFT PARCEL & ANONYMOUS GIFTING PRIVACY POLICY
   // ═══════════════════════════════════════
-  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy-policy'], (_req, res) => {
-    const candidates = [
-      path.resolve(process.cwd(), 'server', 'templates', 'privacy-policy.html'),
-      path.resolve(process.cwd(), 'server', 'public', 'privacy-policy.html'),
-      path.resolve(process.cwd(), 'public', 'privacy-policy.html'),
-      path.resolve(process.cwd(), 'privacy-policy.html'),
-    ];
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        return res.sendFile(c);
-      }
-    }
-    res.status(404).send('Privacy policy template not found');
+  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy', '/api/privacy-policy'], (_req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(PRIVACY_POLICY_HTML);
   });
 
   // ═══════════════════════════════════════

@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { ensureSchema } from "./db";
 import * as fs from "fs";
 import * as path from "path";
+import { PRIVACY_POLICY_HTML } from "./privacy-html";
 
 const app = express();
 const log = console.log;
@@ -223,10 +224,10 @@ function setupErrorHandler(app: express.Application) {
 
   // Serve public static assets & privacy policy
   const publicDir = path.resolve(process.cwd(), 'server', 'public');
-  const privacyPolicyPath = path.resolve(publicDir, 'privacy-policy.html');
   app.use('/public', express.static(publicDir));
-  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy'], (_req: Request, res: Response) => {
-    return res.sendFile(privacyPolicyPath);
+  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy', '/api/privacy-policy'], (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(PRIVACY_POLICY_HTML);
   });
 
   // Serve admin panel
