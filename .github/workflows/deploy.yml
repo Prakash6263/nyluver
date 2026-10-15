@@ -85,28 +85,18 @@ jobs:
               echo "WARNING: SMTP_PASS missing from .env - verification codes will NOT be emailed"
             fi
 
-            # Sync database schema
-            npx drizzle-kit push || true
+            # Sync database schema (non-interactive)
+            npx drizzle-kit push --force 2>/dev/null || true
 
             # Ensure PM2 is installed
             if ! command -v pm2 &> /dev/null; then
               npm install -g pm2
             fi
 
-            # Inspect and kill any zombie process holding port 4020
-            echo "--- PROCESSES BEFORE CLEANUP ---"
-            pm2 list || true
-            ss -tulpn 2>/dev/null | grep 4020 || true
-
-            pm2 delete all 2>/dev/null || true
-            fuser -k 4020/tcp 2>/dev/null || true
-            pkill -9 -f "server_dist/index.js" 2>/dev/null || true
-            sleep 2
-
-            # Cleanly start PM2 process from ecosystem configuration
+            # Resurrect any saved processes and restart nyluver-backend
+            pm2 resurrect 2>/dev/null || true
+            pm2 delete nyluver-backend 2>/dev/null || true
             pm2 start ecosystem.config.cjs
-
-            # Save PM2 so it survives reboots
             pm2 save
 
             # Inspect Nginx configurations
