@@ -225,7 +225,18 @@ function setupErrorHandler(app: express.Application) {
   // Serve public static assets & privacy policy
   const publicDir = path.resolve(process.cwd(), 'server', 'public');
   app.use('/public', express.static(publicDir));
-  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy', '/api/privacy-policy'], (_req: Request, res: Response) => {
+  app.get([
+    '/privacy',
+    '/privacy.html',
+    '/privacy-policy',
+    '/privacy-policy.html',
+    '/gift-parcel-privacy',
+    '/gift-parcel-privacy.html',
+    '/api/privacy',
+    '/api/privacy.html',
+    '/api/privacy-policy',
+    '/api/privacy-policy.html',
+  ], (_req: Request, res: Response) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(PRIVACY_POLICY_HTML);
   });
@@ -241,7 +252,8 @@ function setupErrorHandler(app: express.Application) {
         cleanPath === '/admin/privacy.html' ||
         cleanPath === '/admin/privacy-policy' ||
         cleanPath === '/admin/privacy-policy.html' ||
-        cleanPath === '/admin/gift-parcel-privacy'
+        cleanPath === '/admin/gift-parcel-privacy' ||
+        cleanPath === '/admin/gift-parcel-privacy.html'
       ) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(PRIVACY_POLICY_HTML);

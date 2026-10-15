@@ -309,7 +309,18 @@ export function registerRoutes(app: Express) {
   // ═══════════════════════════════════════
   // GIFT PARCEL & ANONYMOUS GIFTING PRIVACY POLICY
   // ═══════════════════════════════════════
-  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy', '/api/privacy-policy'], (_req, res) => {
+  app.get([
+    '/privacy',
+    '/privacy.html',
+    '/privacy-policy',
+    '/privacy-policy.html',
+    '/gift-parcel-privacy',
+    '/gift-parcel-privacy.html',
+    '/api/privacy',
+    '/api/privacy.html',
+    '/api/privacy-policy',
+    '/api/privacy-policy.html',
+  ], (_req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(PRIVACY_POLICY_HTML);
   });
