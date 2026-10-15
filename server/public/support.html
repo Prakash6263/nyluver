@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Concierge & Support | Nyluver Luxury Florist & Gifting</title>
+  <meta name="description" content="Reach the Nyluver Concierge Team for assistance with luxury flower orders, custom gift parcels, delivery coordination, and anonymous gifting inquiries.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F9F7F4;
+      --card-bg: #FFFFFF;
+      --text-main: #1B3A2D;
+      --text-secondary: #586B63;
+      --green-dark: #142E24;
+      --green-primary: #1B3A2D;
+      --green-light: #2C4D3E;
+      --gold-primary: #C9A96E;
+      --gold-light: #F3EBDD;
+      --gold-dark: #A98748;
+      --border-color: #E6E1D8;
+      --accent-badge: #EBF3EF;
+      --success-green: #10B981;
+      --success-bg: #ECFDF5;
+      --shadow-sm: 0 2px 8px rgba(20, 46, 36, 0.04);
+      --shadow-md: 0 10px 30px rgba(20, 46, 36, 0.07);
+      --shadow-lg: 0 16px 45px rgba(20, 46, 36, 0.1);
+      --font-en: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-ar: 'Cairo', 'Inter', sans-serif;
+      --font-serif: 'Playfair Display', Georgia, serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-en);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html[dir="rtl"] body {
+      font-family: var(--font-ar);
+    }
+
+    /* ─── Top Banner ─── */
+    .top-banner {
+      background: var(--green-dark);
+      color: var(--gold-light);
+      font-size: 0.85rem;
+      padding: 8px 24px;
+      text-align: center;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    /* ─── Header ─── */
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: all 0.3s ease;
+    }
+
+    .nav-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.85rem;
+      color: var(--green-primary);
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 4px;
+    }
+
+    .lang-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background: var(--green-primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(27, 58, 45, 0.25);
+    }
+
+    .privacy-link {
+      font-size: 0.85rem;
+      color: var(--green-primary);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .privacy-link:hover {
+      background: var(--accent-badge);
+      border-color: var(--green-primary);
+    }
+
+    /* ─── Hero Section ─── */
+    .hero {
+      background: radial-gradient(circle at 80% 20%, rgba(201, 169, 110, 0.15) 0%, transparent 60%),
+                  linear-gradient(180deg, #FFFFFF 0%, var(--bg) 100%);
+      padding: 60px 24px 44px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-badge);
+      color: var(--green-primary);
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(27, 58, 45, 0.12);
+    }
+
+    .hero h1 {
+      font-family: var(--font-serif);
+      font-size: 2.6rem;
+      color: var(--green-dark);
+      margin-bottom: 14px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    html[dir="rtl"] .hero h1 {
+      font-family: var(--font-ar);
+      font-weight: 700;
+    }
+
+    .hero-sub {
+      max-width: 660px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+    }
+
+    /* ─── Layout ─── */
+    .main-container {
+      max-width: 1140px;
+      margin: 40px auto 80px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 36px;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── Form Card ─── */
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .form-header {
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(230, 225, 216, 0.7);
+      padding-bottom: 20px;
+    }
+
+    .form-header h2 {
+      font-family: var(--font-serif);
+      font-size: 1.65rem;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+    }
+
+    html[dir="rtl"] .form-header h2 {
+      font-family: var(--font-ar);
+    }
+
+    .form-header p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-card {
+        padding: 24px;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--green-primary);
+    }
+
+    .form-label .required {
+      color: #EF4444;
+      margin-left: 2px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      background: #FAFAFA;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      background: #FFFFFF;
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.2);
+    }
+
+    .form-textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    .form-tip {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 28px;
+      font-size: 1.02rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 14px rgba(20, 46, 36, 0.2);
+    }
+
+    .submit-btn:hover {
+      background: linear-gradient(135deg, var(--green-light) 0%, var(--green-primary) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(20, 46, 36, 0.28);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* ─── Success Confirmation Card (Replaces form upon static submit) ─── */
+    .success-card {
+      display: none;
+      text-align: center;
+      padding: 50px 24px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .success-icon-wrap {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      border: 2px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      color: var(--success-green);
+      font-size: 2.2rem;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+    }
+
+    .success-title {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      color: var(--green-dark);
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    html[dir="rtl"] .success-title {
+      font-family: var(--font-ar);
+    }
+
+    .success-msg {
+      max-width: 520px;
+      margin: 0 auto 26px;
+      color: var(--text-secondary);
+      font-size: 1.02rem;
+      line-height: 1.6;
+    }
+
+    .ticket-badge {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      background: #FAF7F2;
+      border: 1px dashed var(--gold-primary);
+      padding: 14px 28px;
+      border-radius: 12px;
+      margin-bottom: 28px;
+    }
+
+    .ticket-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold-dark);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .ticket-id {
+      font-family: monospace;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--green-primary);
+      letter-spacing: 1px;
+    }
+
+    .success-details {
+      background: var(--accent-badge);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 auto 30px;
+      max-width: 500px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: var(--green-dark);
+    }
+
+    html[dir="rtl"] .success-details {
+      text-align: right;
+    }
+
+    .reset-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--green-primary);
+      font-weight: 600;
+      font-size: 0.92rem;
+      padding: 10px 22px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reset-btn:hover {
+      background: var(--gold-light);
+      border-color: var(--gold-primary);
+    }
+
+    /* ─── Sidebar Contact Channels ─── */
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .contact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .contact-card h3 {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      color: var(--green-dark);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    html[dir="rtl"] .contact-card h3 {
+      font-family: var(--font-ar);
+    }
+
+    .contact-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .contact-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--gold-light);
+      color: var(--gold-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    .contact-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold-dark);
+      font-weight: 600;
+    }
+
+    .contact-val {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      font-weight: 600;
+      text-decoration: none;
+      display: block;
+      margin-top: 2px;
+      transition: color 0.2s;
+    }
+
+    .contact-val:hover {
+      color: var(--gold-dark);
+    }
+
+    .whatsapp-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: #25D366;
+      color: #FFFFFF;
+      text-decoration: none;
+      padding: 13px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-top: 18px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+    }
+
+    .whatsapp-btn:hover {
+      background: #20BD5A;
+      transform: translateY(-1px);
+    }
+
+    .hours-box {
+      background: #FAF7F2;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 18px;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      border-left: 3px solid var(--gold-primary);
+    }
+
+    html[dir="rtl"] .hours-box {
+      border-left: none;
+      border-right: 3px solid var(--gold-primary);
+    }
+
+    /* ─── FAQ Accordion ─── */
+    .faq-item {
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 0;
+    }
+
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+
+    .faq-question {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--green-primary);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .faq-answer {
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      background: var(--green-dark);
+      color: #FFFFFF;
+      padding: 44px 24px 30px;
+      margin-top: auto;
+      border-top: 1px solid rgba(201, 169, 110, 0.2);
+    }
+
+    .footer-container {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-brand {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--gold-primary);
+    }
+
+    .footer-text {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-size: 0.85rem;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--gold-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Banner -->
+  <div class="top-banner">
+    <span class="en-text">✦ Nyluver Concierge Desk — Direct Support for Orders, Custom Parcels & Gifting Inquiries</span>
+    <span class="ar-text" style="display:none;">✦ مكتب خدمة نيلوفر — دعم مباشر للطلبات وتنسيق الهدايا الفاخرة والاستفسارات</span>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <span class="brand-title">NYLUVER</span>
+        <span class="brand-tagline">Florist & Gifting</span>
+      </a>
+
+      <div class="header-actions">
+        <div class="lang-toggle" role="group" aria-label="Language Switcher">
+          <button type="button" class="lang-btn active" id="btn-en" onclick="setLanguage('en')">English</button>
+          <button type="button" class="lang-btn" id="btn-ar" onclick="setLanguage('ar')">العربية</button>
+        </div>
+
+        <a href="/privacy-policy" class="privacy-link">
+          <span class="en-text">🔒 Privacy Policy</span>
+          <span class="ar-text" style="display:none;">🔒 سياسة الخصوصية</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="en-text">✨ Client Concierge & Support</span>
+      <span class="ar-text" style="display:none;">✨ خدمة وكونسيرج العملاء</span>
+    </div>
+    <h1 class="en-text">How May We Assist You?</h1>
+    <h1 class="ar-text" style="display:none;">كيف يمكننا مساعدتك اليوم؟</h1>
+    <p class="hero-sub en-text">
+      Whether you need assistance with an active floral parcel, custom note adjustments, or timing coordination, our dedicated concierge team is ready to serve you.
+    </p>
+    <p class="hero-sub ar-text" style="display:none;">
+      سواء كنت بحاجة إلى مساعدة بشأن طلب باقة ورد جارية، أو تعديل بطاقة الإهداء، أو تنسيق وقت التسليم السري، فإن فريق الدعم والكونسيرج في خدمتك دائماً.
+    </p>
+  </section>
+
+  <!-- Main Container -->
+  <div class="main-container">
+
+    <!-- Left: Support Ticket Submission Form -->
+    <main class="form-card">
+
+      <!-- Active Form View -->
+      <div id="support-form-wrapper">
+        <div class="form-header">
+          <h2 class="en-text">Send Us a Message</h2>
+          <h2 class="ar-text" style="display:none;">أرسل لنا استفسارك</h2>
+          <p class="en-text">Fill in the details below. Our team responds promptly within operating hours.</p>
+          <p class="ar-text" style="display:none;">يرجى ملء البيانات أدناه وسيقوم فريق خدمة الزبائن بالرد عليك في أقرب وقت.</p>
+        </div>
+
+        <form id="support-form" onsubmit="handleSupportSubmit(event)">
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label class="form-label" for="inp-name">
+                <span class="en-text">Your Full Name</span>
+                <span class="ar-text" style="display:none;">الاسم الكامل</span>
+                <span class="required">*</span>
+              </label>
+              <input type="text" id="inp-name" class="form-input" placeholder="e.g. Tariq Al-Mansoor" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inp-contact">
+                <span class="en-text">Email or Phone Number</span>
+                <span class="ar-text" style="display:none;">البريد الإلكتروني أو الهاتف</span>
+                <span class="required">*</span>
+              </label>
+              <input type="text" id="inp-contact" class="form-input" placeholder="e.g. +218 91 234 5678" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inp-topic">
+                <span class="en-text">Inquiry Topic</span>
+                <span class="ar-text" style="display:none;">نوع الاستفسار</span>
+                <span class="required">*</span>
+              </label>
+              <select id="inp-topic" class="form-select" required>
+                <option value="order_tracking">Order Tracking & Delivery Status</option>
+                <option value="gift_parcel">Gift Parcel & Anonymous Gifting</option>
+                <option value="card_change">Gift Card Message Change</option>
+                <option value="address_change">Address or Delivery Slot Adjustment</option>
+                <option value="payment">Payment & Invoice Support</option>
+                <option value="custom">Custom Luxury Floral Arrangement</option>
+                <option value="other">General Inquiry / Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="inp-order">
+                <span class="en-text">Order Number (Optional)</span>
+                <span class="ar-text" style="display:none;">رقم الطلب (اختياري)</span>
+              </label>
+              <input type="text" id="inp-order" class="form-input" placeholder="e.g. #NYL-2026-9041">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label" for="inp-msg">
+                <span class="en-text">Detailed Message</span>
+                <span class="ar-text" style="display:none;">تفاصيل الرسالة</span>
+                <span class="required">*</span>
+              </label>
+              <textarea id="inp-msg" class="form-textarea" placeholder="Please describe how we can assist you with your order or inquiry..." required></textarea>
+              <div class="form-tip en-text">We preserve total sender confidentiality according to our Gift Parcel Policy.</div>
+              <div class="form-tip ar-text" style="display:none;">نحن نلتزم بالسرية التامة لبياناتك وفقاً لسياسة خصوصية الهدايا.</div>
+            </div>
+
+          </div>
+
+          <button type="submit" class="submit-btn" id="btn-submit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span class="en-text" id="txt-submit-en">Submit Support Request</span>
+            <span class="ar-text" id="txt-submit-ar" style="display:none;">إرسال طلب الدعم</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Static Submission Success Screen (shown right after submit) -->
+      <div id="support-success-card" class="success-card">
+        <div class="success-icon-wrap">
+          ✓
+        </div>
+
+        <h2 class="success-title en-text">Request Submitted Successfully!</h2>
+        <h2 class="success-title ar-text" style="display:none;">تم إرسال طلبك بنجاح!</h2>
+
+        <p class="success-msg en-text">
+          Thank you for reaching out to Nyluver Concierge. Your inquiry has been prioritized and assigned to our dedicated guest care specialist.
+        </p>
+        <p class="success-msg ar-text" style="display:none;">
+          شكراً لتواصلك مع فريق نيلوفر. تم استلام طلبك وتوجيهه إلى فريق خدمة العملاء للمتابعة بأسرع وقت.
+        </p>
+
+        <div class="ticket-badge">
+          <span class="ticket-label en-text">Your Support Ticket Reference</span>
+          <span class="ticket-label ar-text" style="display:none;">رقم مرجع التذكرة</span>
+          <span class="ticket-id" id="display-ticket-id">#NYL-849201</span>
+        </div>
+
+        <div class="success-details">
+          <div style="margin-bottom: 6px;">
+            <strong>✦ Response Window:</strong> Within 15 to 30 minutes during business hours.
+          </div>
+          <div>
+            <strong>✦ Confirmation:</strong> If urgent, feel free to quote this reference over WhatsApp for instantaneous routing.
+          </div>
+        </div>
+
+        <button type="button" class="reset-btn" onclick="resetSupportForm()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span class="en-text">Submit Another Inquiry</span>
+          <span class="ar-text" style="display:none;">تقديم استفسار آخر</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Right Sidebar: Direct Contact Channels & FAQ -->
+    <aside class="sidebar-section">
+
+      <!-- Direct Contact Card -->
+      <div class="contact-card">
+        <h3 class="en-text">✦ Concierge Channels</h3>
+        <h3 class="ar-text" style="display:none;">✦ قنوات التواصل المباشر</h3>
+
+        <ul class="contact-list">
+          <li class="contact-item">
+            <div class="contact-icon">📞</div>
+            <div>
+              <span class="contact-label en-text">Direct Helpline</span>
+              <span class="contact-label ar-text" style="display:none;">الهاتف المباشر</span>
+              <a href="tel:+218910000000" class="contact-val">+218 91 000 0000</a>
+            </div>
+          </li>
+
+          <li class="contact-item">
+            <div class="contact-icon">✉️</div>
+            <div>
+              <span class="contact-label en-text">Email Inquiries</span>
+              <span class="contact-label ar-text" style="display:none;">البريد الإلكتروني</span>
+              <a href="mailto:support@nyluver.com" class="contact-val">support@nyluver.com</a>
+            </div>
+          </li>
+
+          <li class="contact-item">
+            <div class="contact-icon">📍</div>
+            <div>
+              <span class="contact-label en-text">Boutique Operations</span>
+              <span class="contact-label ar-text" style="display:none;">مركز العمليات</span>
+              <span class="contact-val" style="font-weight:500;">Tripoli, Libya</span>
+            </div>
+          </li>
+        </ul>
+
+        <a href="https://wa.me/218910000000?text=Hello%20Nyluver%2C%20I%20need%20assistance%20with%20my%20order" target="_blank" class="whatsapp-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.301-.15-1.78-.879-2.056-.98-.276-.1-.476-.15-.677.15-.2.301-.777.98-.952 1.18-.175.2-.351.226-.652.075-.301-.151-1.272-.469-2.423-1.496-.896-.799-1.501-1.786-1.677-2.087-.176-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.176.2-.301.301-.502.101-.2.05-.376-.025-.527-.075-.15-.677-1.632-.927-2.235-.243-.587-.49-.508-.677-.518-.175-.01-.376-.01-.577-.01-.2 0-.526.075-.802.376-.276.301-1.053 1.029-1.053 2.509 0 1.48 1.078 2.909 1.229 3.11.15.201 2.122 3.24 5.141 4.544.718.311 1.279.497 1.716.636.723.23 1.38.197 1.9.12.58-.087 1.78-.727 2.031-1.43.251-.703.251-1.305.176-1.43-.075-.126-.276-.201-.577-.351z"/>
+          </svg>
+          <span class="en-text">Chat on WhatsApp</span>
+          <span class="ar-text" style="display:none;">محادثة عبر واتساب</span>
+        </a>
+
+        <div class="hours-box">
+          <strong class="en-text">✦ Concierge Hours:</strong>
+          <strong class="ar-text" style="display:none;">✦ ساعات العمل:</strong><br>
+          <span class="en-text">Daily from 9:00 AM to 11:00 PM (Tripoli Time)</span>
+          <span class="ar-text" style="display:none;">يومياً من 9:00 صباحاً حتى 11:00 مساءً</span>
+        </div>
+      </div>
+
+      <!-- Quick FAQs Card -->
+      <div class="contact-card">
+        <h3 class="en-text">✦ Common Questions</h3>
+        <h3 class="ar-text" style="display:none;">✦ أسئلة شائعة</h3>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="en-text">Can I keep my gift secret?</span>
+            <span class="ar-text" style="display:none;">هل هويتي محمية تماماً؟</span>
+            <span>+</span>
+          </div>
+          <div class="faq-answer en-text">Yes, all Nyluver parcels are strictly anonymous by default. Sender credentials are never displayed to the recipient.</div>
+          <div class="faq-answer ar-text" style="display:none;">نعم، جميع هدايا نيلوفر سرية بالكامل للمرسل بشكل افتراضي ولا تظهر تفاصيلك للمستلم.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span class="en-text">Can I change delivery time?</span>
+            <span class="ar-text" style="display:none;">هل يمكن تعديل وقت التوصيل؟</span>
+            <span>+</span>
+          </div>
+          <div class="faq-answer en-text">You can request slot updates up to 2 hours before the scheduled dispatch window.</div>
+          <div class="faq-answer ar-text" style="display:none;">يمكن تعديل موعد التوصيل قبل ساعتين على الأقل من بدء فترة التسليم المحددة.</div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-container">
+      <div>
+        <div class="footer-brand">NYLUVER</div>
+        <p class="footer-text en-text">Luxury Florist & Gifting. Uncompromising Elegance.</p>
+        <p class="footer-text ar-text" style="display:none;">أرقى تصاميم الزهور والهدايا الفاخرة.</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="/support" class="en-text">Support</a>
+        <a href="/support" class="ar-text" style="display:none;">الدعم الفني</a>
+        <span>•</span>
+        <a href="/privacy-policy" class="en-text">Privacy Policy</a>
+        <a href="/privacy-policy" class="ar-text" style="display:none;">سياسة الخصوصية</a>
+      </div>
+
+      <div class="footer-text">
+        © 2026 Nyluver Inc. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      const html = document.documentElement;
+      const isArabic = (lang === 'ar');
+      
+      html.lang = lang;
+      html.dir = isArabic ? 'rtl' : 'ltr';
+
+      document.getElementById('btn-en').classList.toggle('active', !isArabic);
+      document.getElementById('btn-ar').classList.toggle('active', isArabic);
+
+      document.querySelectorAll('.en-text').forEach(el => {
+        el.style.display = isArabic ? 'none' : '';
+      });
+
+      document.querySelectorAll('.ar-text').forEach(el => {
+        el.style.display = isArabic ? '' : 'none';
+      });
+
+      // Update placeholders
+      const nameInp = document.getElementById('inp-name');
+      const contactInp = document.getElementById('inp-contact');
+      const msgInp = document.getElementById('inp-msg');
+
+      if (isArabic) {
+        nameInp.placeholder = 'مثال: طارق المنصور';
+        contactInp.placeholder = 'مثال: 5678 234 91 218+';
+        msgInp.placeholder = 'يرجى كتابة استفسارك أو طلبك هنا...';
+      } else {
+        nameInp.placeholder = 'e.g. Tariq Al-Mansoor';
+        contactInp.placeholder = 'e.g. +218 91 234 5678';
+        msgInp.placeholder = 'Please describe how we can assist you with your order or inquiry...';
+      }
+
+      try {
+        localStorage.setItem('nyluver-lang', lang);
+      } catch (e) {}
+    }
+
+    // Initialize Language
+    (function init() {
+      try {
+        const saved = localStorage.getItem('nyluver-lang');
+        if (saved === 'ar' || saved === 'en') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) {}
+      if (navigator.language && navigator.language.startsWith('ar')) {
+        setLanguage('ar');
+      }
+    })();
+
+    // Static form submission simulation without external API dependency
+    function handleSupportSubmit(e) {
+      e.preventDefault();
+
+      const btn = document.getElementById('btn-submit');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>✦ Submitting request...</span>';
+
+      setTimeout(() => {
+        // Generate dynamic luxury ticket reference
+        const randomNum = Math.floor(100000 + Math.random() * 900000);
+        const ticketId = '#NYL-' + randomNum;
+        document.getElementById('display-ticket-id').innerText = ticketId;
+
+        // Hide form and show luxury confirmation
+        document.getElementById('support-form-wrapper').style.display = 'none';
+        document.getElementById('support-success-card').style.display = 'block';
+
+        // Scroll to top of card
+        document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }, 600);
+    }
+
+    function resetSupportForm() {
+      document.getElementById('support-form').reset();
+      document.getElementById('support-success-card').style.display = 'none';
+      document.getElementById('support-form-wrapper').style.display = 'block';
+      document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>

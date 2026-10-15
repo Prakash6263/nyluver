@@ -5,6 +5,7 @@ import { ensureSchema } from "./db";
 import * as fs from "fs";
 import * as path from "path";
 import { PRIVACY_POLICY_HTML } from "./privacy-html";
+import { SUPPORT_HTML } from "./support-html";
 
 const app = express();
 const log = console.log;
@@ -240,8 +241,23 @@ function setupErrorHandler(app: express.Application) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(PRIVACY_POLICY_HTML);
   });
+  app.get([
+    '/support',
+    '/support.html',
+    '/help',
+    '/help.html',
+    '/contact',
+    '/contact.html',
+    '/api/support',
+    '/api/support.html',
+    '/api/help',
+    '/api/contact',
+  ], (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(SUPPORT_HTML);
+  });
 
-  // Serve admin panel & admin-scoped privacy policy
+  // Serve admin panel & admin-scoped privacy policy / support
   const adminDir = path.resolve(process.cwd(), 'server', 'admin');
   app.use('/admin', express.static(adminDir));
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -257,6 +273,17 @@ function setupErrorHandler(app: express.Application) {
       ) {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.send(PRIVACY_POLICY_HTML);
+      }
+      if (
+        cleanPath === '/admin/support' ||
+        cleanPath === '/admin/support.html' ||
+        cleanPath === '/admin/help' ||
+        cleanPath === '/admin/help.html' ||
+        cleanPath === '/admin/contact' ||
+        cleanPath === '/admin/contact.html'
+      ) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(SUPPORT_HTML);
       }
       return res.sendFile(path.resolve(adminDir, 'index.html'));
     }

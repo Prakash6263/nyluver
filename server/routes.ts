@@ -15,6 +15,7 @@ import { hashPassword, verifyPassword, validatePasswordStrength, generateNumeric
 import { deliverVerificationCode } from "./mailer";
 import { POINTS_PER_UNIT, UNIT_VALUE_LYD, maxPointsForValue, pointsEarned, planRedemption, redemptionReady, round2 } from "./loyalty";
 import { PRIVACY_POLICY_HTML } from "./privacy-html";
+import { SUPPORT_HTML } from "./support-html";
 
 const PgSession = connectPgSimple(session);
 const sessionPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -323,6 +324,25 @@ export function registerRoutes(app: Express) {
   ], (_req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(PRIVACY_POLICY_HTML);
+  });
+
+  // ═══════════════════════════════════════
+  // CLIENT CONCIERGE & SUPPORT (STATIC HTML)
+  // ═══════════════════════════════════════
+  app.get([
+    '/support',
+    '/support.html',
+    '/help',
+    '/help.html',
+    '/contact',
+    '/contact.html',
+    '/api/support',
+    '/api/support.html',
+    '/api/help',
+    '/api/contact',
+  ], (_req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(SUPPORT_HTML);
   });
 
   // ═══════════════════════════════════════
