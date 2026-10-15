@@ -93,21 +93,30 @@ jobs:
               npm install -g pm2
             fi
 
-            # Cleanly reload PM2 process from ecosystem configuration
-            pm2 delete nyluver-backend 2>/dev/null || true
+            # Inspect and kill any zombie process holding port 4020
+            echo "--- PROCESSES BEFORE CLEANUP ---"
+            pm2 list || true
+            ss -tulpn 2>/dev/null | grep 4020 || true
+
+            pm2 delete all 2>/dev/null || true
+            fuser -k 4020/tcp 2>/dev/null || true
+            pkill -9 -f "server_dist/index.js" 2>/dev/null || true
+            sleep 2
+
+            # Cleanly start PM2 process from ecosystem configuration
             pm2 start ecosystem.config.cjs
 
             # Save PM2 so it survives reboots
             pm2 save
 
-            # Inspect Nginx configurations for nyluver
+            # Inspect Nginx configurations
             echo "--- NGINX CONFIGS ---"
-            cat /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* 2>/dev/null | grep -E -A 20 "server_name.*(api|admin)\.nyluver\.com" || true
-            printf '%s\n' "${{ secrets.SSH_PASSWORD }}" | sudo -S nginx -T 2>/dev/null | grep -E -A 20 "server_name.*(api|admin)\.nyluver\.com" || true
+            ls -la /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null || true
+            grep -rn "proxy_pass" /etc/nginx/ 2>/dev/null || true
 
             # Verify local API responses
             echo "--- LOCAL PROBES ---"
-            sleep 4
+            sleep 5
             echo -n "Probe 4020 /privacy: "
             curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/privacy || true
             echo -n "Probe 4020 /privacy.html: "
