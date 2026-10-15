@@ -92,11 +92,14 @@ jobs:
               npm install -g pm2
             fi
 
-            # Restart existing PM2 process (preserves env vars from .env file)
-            # If no process exists, start fresh via ecosystem config
-            pm2 restart nyluver-backend --update-env 2>/dev/null || \
-              pm2 start ecosystem.config.cjs
+            # Cleanly reload PM2 process from ecosystem configuration
+            pm2 delete nyluver-backend 2>/dev/null || true
+            pm2 start ecosystem.config.cjs
 
             # Save PM2 so it survives reboots
             pm2 save
+
+            # Verify the privacy-policy route is responding
+            sleep 3
+            curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:4020/privacy-policy || true
             echo "✅ Deploy complete!"
