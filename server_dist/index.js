@@ -732,6 +732,10 @@ var init_seed = __esm({
 // server/index.ts
 import express from "express";
 
+// server/routes.ts
+import * as fs from "fs";
+import * as path from "path";
+
 // server/storage.ts
 init_db();
 init_schema();
@@ -1991,6 +1995,20 @@ function registerRoutes(app2) {
       sameSite: "lax"
     }
   }));
+  app2.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy", "/api/privacy-policy"], (_req, res) => {
+    const candidates = [
+      path.resolve(process.cwd(), "server", "templates", "privacy-policy.html"),
+      path.resolve(process.cwd(), "server", "public", "privacy-policy.html"),
+      path.resolve(process.cwd(), "public", "privacy-policy.html"),
+      path.resolve(process.cwd(), "privacy-policy.html")
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        return res.sendFile(c);
+      }
+    }
+    res.status(404).send("Privacy policy template not found");
+  });
   app2.post("/api/auth/register/send-otp", async (req, res) => {
     try {
       const { name, email, phone, password } = req.body || {};
@@ -3274,8 +3292,8 @@ function registerRoutes(app2) {
 
 // server/index.ts
 init_db();
-import * as fs from "fs";
-import * as path from "path";
+import * as fs2 from "fs";
+import * as path2 from "path";
 var app = express();
 var log = console.log;
 function setupCors(app2) {
@@ -3312,7 +3330,7 @@ function setupBodyParsing(app2) {
 function setupRequestLogging(app2) {
   app2.use((req, res, next) => {
     const start = Date.now();
-    const path2 = req.path;
+    const path3 = req.path;
     let capturedJsonResponse = void 0;
     const originalResJson = res.json;
     res.json = function(bodyJson, ...args) {
@@ -3320,9 +3338,9 @@ function setupRequestLogging(app2) {
       return originalResJson.apply(res, [bodyJson, ...args]);
     };
     res.on("finish", () => {
-      if (!path2.startsWith("/api")) return;
+      if (!path3.startsWith("/api")) return;
       const duration = Date.now() - start;
-      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -3336,8 +3354,8 @@ function setupRequestLogging(app2) {
 }
 function getAppName() {
   try {
-    const appJsonPath = path.resolve(process.cwd(), "app.json");
-    const appJsonContent = fs.readFileSync(appJsonPath, "utf-8");
+    const appJsonPath = path2.resolve(process.cwd(), "app.json");
+    const appJsonContent = fs2.readFileSync(appJsonPath, "utf-8");
     const appJson = JSON.parse(appJsonContent);
     return appJson.expo?.name || "App Landing Page";
   } catch {
@@ -3345,19 +3363,19 @@ function getAppName() {
   }
 }
 function serveExpoManifest(platform, res) {
-  const manifestPath = path.resolve(
+  const manifestPath = path2.resolve(
     process.cwd(),
     "static-build",
     platform,
     "manifest.json"
   );
-  if (!fs.existsSync(manifestPath)) {
+  if (!fs2.existsSync(manifestPath)) {
     return res.status(404).json({ error: `Manifest not found for platform: ${platform}` });
   }
   res.setHeader("expo-protocol-version", "1");
   res.setHeader("expo-sfv-version", "0");
   res.setHeader("content-type", "application/json");
-  const manifest = fs.readFileSync(manifestPath, "utf-8");
+  const manifest = fs2.readFileSync(manifestPath, "utf-8");
   res.send(manifest);
 }
 function serveLandingPage({
@@ -3379,13 +3397,13 @@ function serveLandingPage({
   res.status(200).send(html);
 }
 function configureExpoAndLanding(app2) {
-  const templatePath = path.resolve(
+  const templatePath = path2.resolve(
     process.cwd(),
     "server",
     "templates",
     "landing-page.html"
   );
-  const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+  const landingPageTemplate = fs2.readFileSync(templatePath, "utf-8");
   const appName = getAppName();
   log("Serving static Expo files with dynamic manifest routing");
   app2.use((req, res, next) => {
@@ -3409,8 +3427,8 @@ function configureExpoAndLanding(app2) {
     }
     next();
   });
-  app2.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
-  app2.use(express.static(path.resolve(process.cwd(), "static-build")));
+  app2.use("/assets", express.static(path2.resolve(process.cwd(), "assets")));
+  app2.use(express.static(path2.resolve(process.cwd(), "static-build")));
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
 function setupErrorHandler(app2) {
@@ -3431,17 +3449,17 @@ function setupErrorHandler(app2) {
   setupRequestLogging(app);
   configureExpoAndLanding(app);
   registerRoutes(app);
-  const publicDir = path.resolve(process.cwd(), "server", "public");
-  const privacyPolicyPath = path.resolve(publicDir, "privacy-policy.html");
+  const publicDir = path2.resolve(process.cwd(), "server", "public");
+  const privacyPolicyPath = path2.resolve(publicDir, "privacy-policy.html");
   app.use("/public", express.static(publicDir));
   app.get(["/privacy", "/privacy-policy", "/gift-parcel-privacy"], (_req, res) => {
     return res.sendFile(privacyPolicyPath);
   });
-  const adminDir = path.resolve(process.cwd(), "server", "admin");
+  const adminDir = path2.resolve(process.cwd(), "server", "admin");
   app.use("/admin", express.static(adminDir));
   app.use((req, res, next) => {
     if (req.path.startsWith("/admin")) {
-      return res.sendFile(path.resolve(adminDir, "index.html"));
+      return res.sendFile(path2.resolve(adminDir, "index.html"));
     }
     next();
   });

@@ -1,4 +1,6 @@
 import { Express, Request, Response, NextFunction } from "express";
+import * as fs from "fs";
+import * as path from "path";
 import { storage } from "./storage";
 import { db } from "./db";
 import { users } from "@shared/schema";
@@ -302,6 +304,24 @@ export function registerRoutes(app: Express) {
       sameSite: 'lax',
     },
   }));
+
+  // ═══════════════════════════════════════
+  // GIFT PARCEL & ANONYMOUS GIFTING PRIVACY POLICY
+  // ═══════════════════════════════════════
+  app.get(['/privacy', '/privacy-policy', '/gift-parcel-privacy', '/api/privacy-policy'], (_req, res) => {
+    const candidates = [
+      path.resolve(process.cwd(), 'server', 'templates', 'privacy-policy.html'),
+      path.resolve(process.cwd(), 'server', 'public', 'privacy-policy.html'),
+      path.resolve(process.cwd(), 'public', 'privacy-policy.html'),
+      path.resolve(process.cwd(), 'privacy-policy.html'),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        return res.sendFile(c);
+      }
+    }
+    res.status(404).send('Privacy policy template not found');
+  });
 
   // ═══════════════════════════════════════
   // APP AUTH (email + password, codes delivered by email)
