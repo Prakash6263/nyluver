@@ -99,10 +99,9 @@ jobs:
             # Save PM2 so it survives reboots
             pm2 save
 
-            # Inspect Nginx configurations for nyluver
+            # Inspect Nginx configurations for nyluver using sudo
             echo "--- NGINX CONFIGS ---"
-            grep -rn "nyluver.com" /etc/nginx/ 2>/dev/null || true
-            cat /etc/nginx/sites-enabled/*nyluver* /etc/nginx/conf.d/*nyluver* 2>/dev/null || true
+            printf '%s\n' "${{ secrets.SSH_PASSWORD }}" | sudo -S nginx -T 2>/dev/null | grep -E -A 30 "server_name.*(api|admin)\.nyluver\.com" || true
 
             # Verify local API responses
             echo "--- LOCAL PROBES ---"
