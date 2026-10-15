@@ -93,30 +93,21 @@ jobs:
               npm install -g pm2
             fi
 
-            # Resurrect any saved processes and restart nyluver-backend
-            pm2 resurrect 2>/dev/null || true
-            pm2 delete nyluver-backend 2>/dev/null || true
-            pm2 start ecosystem.config.cjs
+            # Restart nyluver-backend process
+            pm2 restart nyluver-backend 2>/dev/null || pm2 start ecosystem.config.cjs
             pm2 save
-
-            # Inspect Nginx configurations
-            echo "--- NGINX CONFIGS ---"
-            ls -la /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ 2>/dev/null || true
-            grep -rn "proxy_pass" /etc/nginx/ 2>/dev/null || true
 
             # Verify local API responses
             echo "--- LOCAL PROBES ---"
-            sleep 5
+            sleep 4
             echo -n "Probe 4020 /privacy: "
             curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/privacy || true
-            echo -n "Probe 4020 /privacy.html: "
-            curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/privacy.html || true
             echo -n "Probe 4020 /privacy-policy: "
             curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/privacy-policy || true
-            echo -n "Probe 4020 /api/privacy: "
-            curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/api/privacy || true
-            echo -n "Probe 4020 /admin/privacy.html: "
-            curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/admin/privacy.html || true
+            echo -n "Probe 4020 /support: "
+            curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/support || true
+            echo -n "Probe 4020 /support.html: "
+            curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:4020/support.html || true
 
             pm2 logs nyluver-backend --lines 15 --nostream || true
             echo "✅ Deploy complete!"
